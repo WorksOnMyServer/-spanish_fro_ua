@@ -1,0 +1,48 @@
+#version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: spanish_learning_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_secure_password
+      MYSQL_DATABASE: spanish_bot_db
+      MYSQL_USER: bot_user
+      MYSQL_PASSWORD: bot_password
+      TZ: Europe/Kyiv
+<<<<<<< HEAD
+#    ports:
+#      - "3306:3306"
+=======
+    ports:
+      - "3306:3306"
+>>>>>>> ef3c3ad921dbc23b0803e3433be3742c5e1cd546
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: spanish_learning_app
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      TZ: Europe/Kyiv
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    command: python main.py
+
+volumes:
+  mysql_data:
+    driver: local

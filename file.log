@@ -1,0 +1,475 @@
+spanish_learning_app  | === Spanish Learning Bot Ecosystem Starting ===
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:SELECT DATABASE()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-04 21:09:57,638 INFO sqlalchemy.engine.Engine SELECT DATABASE()
+spanish_learning_app  | 2026-08-04 21:09:57,638 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | 2026-08-04 21:09:57,640 INFO sqlalchemy.engine.Engine SELECT @@sql_mode
+spanish_learning_app  | 2026-08-04 21:09:57,640 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:SELECT @@sql_mode
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-04 21:09:57,641 INFO sqlalchemy.engine.Engine SELECT @@lower_case_table_names
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:SELECT @@lower_case_table_names
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-04 21:09:57,641 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | 2026-08-04 21:09:57,641 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+spanish_learning_app  | 2026-08-04 21:09:57,641 INFO sqlalchemy.engine.Engine DESCRIBE `spanish_bot_db`.`lesson_posts`
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:BEGIN (implicit)
+spanish_learning_app  | 2026-08-04 21:09:57,641 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:DESCRIBE `spanish_bot_db`.`lesson_posts`
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-04 21:09:57,644 INFO sqlalchemy.engine.Engine 
+spanish_learning_app  | CREATE TABLE lesson_posts (
+spanish_learning_app  | 	id INTEGER NOT NULL AUTO_INCREMENT, 
+spanish_learning_app  | 	level VARCHAR(10) NOT NULL, 
+spanish_learning_app  | 	topic VARCHAR(255) NOT NULL, 
+spanish_learning_app  | 	content_html TEXT NOT NULL, 
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:
+spanish_learning_app  | 	quiz_data JSON, 
+spanish_learning_app  | 	status ENUM('DRAFT','APPROVED','PUBLISHED') NOT NULL, 
+spanish_learning_app  | 	created_at DATETIME NOT NULL DEFAULT (now()), 
+spanish_learning_app  | 	scheduled_at DATETIME, 
+spanish_learning_app  | CREATE TABLE lesson_posts (
+spanish_learning_app  | 	published_at DATETIME, 
+spanish_learning_app  | 	id INTEGER NOT NULL AUTO_INCREMENT, 
+spanish_learning_app  | 	PRIMARY KEY (id)
+spanish_learning_app  | 	level VARCHAR(10) NOT NULL, 
+spanish_learning_app  | 	topic VARCHAR(255) NOT NULL, 
+spanish_learning_app  | 	content_html TEXT NOT NULL, 
+spanish_learning_app  | 	quiz_data JSON, 
+spanish_learning_app  | 	status ENUM('DRAFT','APPROVED','PUBLISHED') NOT NULL, 
+spanish_learning_app  | 	created_at DATETIME NOT NULL DEFAULT (now()), 
+spanish_learning_app  | 	scheduled_at DATETIME, 
+spanish_learning_app  | 	published_at DATETIME, 
+spanish_learning_app  | 	PRIMARY KEY (id)
+spanish_learning_app  | )
+spanish_learning_app  | 
+spanish_learning_app  | 
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[no key 0.00009s] ()
+spanish_learning_app  | )
+spanish_learning_app  | 
+spanish_learning_app  | 
+spanish_learning_app  | 2026-08-04 21:09:57,644 INFO sqlalchemy.engine.Engine [no key 0.00009s] ()
+spanish_learning_app  | 2026-08-04 21:09:57,657 INFO sqlalchemy.engine.Engine CREATE INDEX ix_lesson_posts_status ON lesson_posts (status)
+spanish_learning_app  | 2026-08-04 21:09:57,657 INFO sqlalchemy.engine.Engine [no key 0.00009s] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:CREATE INDEX ix_lesson_posts_status ON lesson_posts (status)
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[no key 0.00009s] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:CREATE INDEX ix_lesson_posts_level ON lesson_posts (level)
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[no key 0.00010s] ()
+spanish_learning_app  | 2026-08-04 21:09:57,671 INFO sqlalchemy.engine.Engine CREATE INDEX ix_lesson_posts_level ON lesson_posts (level)
+spanish_learning_app  | 2026-08-04 21:09:57,671 INFO sqlalchemy.engine.Engine [no key 0.00010s] ()
+spanish_learning_app  | 2026-08-04 21:09:57,679 INFO sqlalchemy.engine.Engine COMMIT
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:COMMIT
+spanish_learning_app  | [1/4] База даних проініціалізована.
+spanish_learning_app  | [2/4] Запуск генерації тестового поста через LLM...
+spanish_learning_app  | INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+spanish_learning_app  | INFO:openai._base_client:Retrying request to /chat/completions in 0.376092 seconds
+spanish_learning_app  | INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+spanish_learning_app  | INFO:openai._base_client:Retrying request to /chat/completions in 0.770153 seconds
+spanish_learning_app  | INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+spanish_learning_app  | Traceback (most recent call last):
+spanish_learning_app  |   File "/app/main.py", line 64, in <module>
+spanish_learning_app  |     asyncio.run(main())
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/runners.py", line 190, in run
+spanish_learning_app  |     return runner.run(main)
+spanish_learning_app  |            ^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/runners.py", line 118, in run
+spanish_learning_app  |     return self._loop.run_until_complete(task)
+spanish_learning_app  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+spanish_learning_app  |     return future.result()
+spanish_learning_app  |            ^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/app/main.py", line 33, in main
+spanish_learning_app  |     await generate_and_save_post(
+spanish_learning_app  |   File "/app/generator/llm_pipeline.py", line 45, in generate_and_save_post
+spanish_learning_app  |     completion = await client.beta.chat.completions.parse(
+spanish_learning_app  |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/openai/resources/chat/completions/completions.py", line 1804, in parse
+spanish_learning_app  |     return await self._post(
+spanish_learning_app  |            ^^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/openai/_base_client.py", line 1992, in post
+spanish_learning_app  |     return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+spanish_learning_app  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/openai/_base_client.py", line 1777, in request
+spanish_learning_app  |     raise self._make_status_error_from_response(err.response) from None
+spanish_learning_app  | openai.RateLimitError: Error code: 429 - {'error': {'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.', 'type': 'insufficient_quota', 'param': None, 'code': 'insufficient_quota'}}
+spanish_learning_app  | Exception ignored in: <function Connection.__del__ at 0x7620188cf880>
+spanish_learning_app  | Traceback (most recent call last):
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/aiomysql/connection.py", line 1131, in __del__
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/aiomysql/connection.py", line 339, in close
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/selector_events.py", line 864, in close
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/base_events.py", line 762, in call_soon
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/base_events.py", line 520, in _check_closed
+spanish_learning_app  | RuntimeError: Event loop is closed
+spanish_learning_app  | === Spanish Learning Bot Ecosystem Starting ===
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:SELECT DATABASE()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-04 21:10:05,387 INFO sqlalchemy.engine.Engine SELECT DATABASE()
+spanish_learning_app  | 2026-08-04 21:10:05,387 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | 2026-08-04 21:10:05,387 INFO sqlalchemy.engine.Engine SELECT @@sql_mode
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:SELECT @@sql_mode
+spanish_learning_app  | 2026-08-04 21:10:05,387 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-04 21:10:05,388 INFO sqlalchemy.engine.Engine SELECT @@lower_case_table_names
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:SELECT @@lower_case_table_names
+spanish_learning_app  | 2026-08-04 21:10:05,388 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-04 21:10:05,388 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:BEGIN (implicit)
+spanish_learning_app  | 2026-08-04 21:10:05,388 INFO sqlalchemy.engine.Engine DESCRIBE `spanish_bot_db`.`lesson_posts`
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:DESCRIBE `spanish_bot_db`.`lesson_posts`
+spanish_learning_app  | 2026-08-04 21:10:05,388 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:COMMIT
+spanish_learning_app  | 2026-08-04 21:10:05,403 INFO sqlalchemy.engine.Engine COMMIT
+spanish_learning_app  | [1/4] База даних проініціалізована.
+spanish_learning_app  | [2/4] Запуск генерації тестового поста через LLM...
+spanish_learning_app  | INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+spanish_learning_app  | INFO:openai._base_client:Retrying request to /chat/completions in 0.403681 seconds
+spanish_learning_app  | INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+spanish_learning_app  | INFO:openai._base_client:Retrying request to /chat/completions in 0.920733 seconds
+spanish_learning_app  | INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+spanish_learning_app  | Traceback (most recent call last):
+spanish_learning_app  |   File "/app/main.py", line 64, in <module>
+spanish_learning_app  |     asyncio.run(main())
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/runners.py", line 190, in run
+spanish_learning_app  |     return runner.run(main)
+spanish_learning_app  |            ^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/runners.py", line 118, in run
+spanish_learning_app  |     return self._loop.run_until_complete(task)
+spanish_learning_app  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+spanish_learning_app  |     return future.result()
+spanish_learning_app  |            ^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/app/main.py", line 33, in main
+spanish_learning_app  |     await generate_and_save_post(
+spanish_learning_app  |   File "/app/generator/llm_pipeline.py", line 45, in generate_and_save_post
+spanish_learning_app  |     completion = await client.beta.chat.completions.parse(
+spanish_learning_app  |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/openai/resources/chat/completions/completions.py", line 1804, in parse
+spanish_learning_app  |     return await self._post(
+spanish_learning_app  |            ^^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/openai/_base_client.py", line 1992, in post
+spanish_learning_app  |     return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+spanish_learning_app  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/openai/_base_client.py", line 1777, in request
+spanish_learning_app  |     raise self._make_status_error_from_response(err.response) from None
+spanish_learning_app  | openai.RateLimitError: Error code: 429 - {'error': {'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.', 'type': 'insufficient_quota', 'param': None, 'code': 'insufficient_quota'}}
+spanish_learning_app  | Exception ignored in: <function Connection.__del__ at 0x789f674a3880>
+spanish_learning_app  | Traceback (most recent call last):
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/aiomysql/connection.py", line 1131, in __del__
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/aiomysql/connection.py", line 339, in close
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/selector_events.py", line 864, in close
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/base_events.py", line 762, in call_soon
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/base_events.py", line 520, in _check_closed
+spanish_learning_app  | RuntimeError: Event loop is closed
+spanish_learning_app  | === Spanish Learning Bot Ecosystem Starting ===
+spanish_learning_app  | 2026-08-04 21:10:12,183 INFO sqlalchemy.engine.Engine SELECT DATABASE()
+spanish_learning_app  | 2026-08-04 21:10:12,184 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:SELECT DATABASE()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-04 21:10:12,184 INFO sqlalchemy.engine.Engine SELECT @@sql_mode
+spanish_learning_app  | 2026-08-04 21:10:12,184 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:SELECT @@sql_mode
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-04 21:10:12,184 INFO sqlalchemy.engine.Engine SELECT @@lower_case_table_names
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:SELECT @@lower_case_table_names
+spanish_learning_app  | 2026-08-04 21:10:12,184 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-04 21:10:12,185 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:BEGIN (implicit)
+spanish_learning_app  | 2026-08-04 21:10:12,185 INFO sqlalchemy.engine.Engine DESCRIBE `spanish_bot_db`.`lesson_posts`
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:DESCRIBE `spanish_bot_db`.`lesson_posts`
+spanish_learning_app  | 2026-08-04 21:10:12,185 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:COMMIT
+spanish_learning_app  | 2026-08-04 21:10:12,187 INFO sqlalchemy.engine.Engine COMMIT
+spanish_learning_app  | [1/4] База даних проініціалізована.
+spanish_learning_app  | [2/4] Запуск генерації тестового поста через LLM...
+spanish_learning_app  | INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+spanish_learning_app  | INFO:openai._base_client:Retrying request to /chat/completions in 0.438508 seconds
+spanish_learning_app  | INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+spanish_learning_app  | INFO:openai._base_client:Retrying request to /chat/completions in 0.865835 seconds
+spanish_learning_app  | INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+spanish_learning_app  | Traceback (most recent call last):
+spanish_learning_app  |   File "/app/main.py", line 64, in <module>
+spanish_learning_app  |     asyncio.run(main())
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/runners.py", line 190, in run
+spanish_learning_app  |     return runner.run(main)
+spanish_learning_app  |            ^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/runners.py", line 118, in run
+spanish_learning_app  |     return self._loop.run_until_complete(task)
+spanish_learning_app  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+spanish_learning_app  |     return future.result()
+spanish_learning_app  |            ^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/app/main.py", line 33, in main
+spanish_learning_app  |     await generate_and_save_post(
+spanish_learning_app  |   File "/app/generator/llm_pipeline.py", line 45, in generate_and_save_post
+spanish_learning_app  |     completion = await client.beta.chat.completions.parse(
+spanish_learning_app  |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/openai/resources/chat/completions/completions.py", line 1804, in parse
+spanish_learning_app  |     return await self._post(
+spanish_learning_app  |            ^^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/openai/_base_client.py", line 1992, in post
+spanish_learning_app  |     return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+spanish_learning_app  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/openai/_base_client.py", line 1777, in request
+spanish_learning_app  |     raise self._make_status_error_from_response(err.response) from None
+spanish_learning_app  | openai.RateLimitError: Error code: 429 - {'error': {'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.', 'type': 'insufficient_quota', 'param': None, 'code': 'insufficient_quota'}}
+spanish_learning_app  | Exception ignored in: <function Connection.__del__ at 0x77cfdca83880>
+spanish_learning_app  | Traceback (most recent call last):
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/aiomysql/connection.py", line 1131, in __del__
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/aiomysql/connection.py", line 339, in close
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/selector_events.py", line 864, in close
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/base_events.py", line 762, in call_soon
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/base_events.py", line 520, in _check_closed
+spanish_learning_app  | RuntimeError: Event loop is closed
+spanish_learning_app  | === Spanish Learning Bot Ecosystem Starting ===
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:SELECT DATABASE()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-04 21:10:19,051 INFO sqlalchemy.engine.Engine SELECT DATABASE()
+spanish_learning_app  | 2026-08-04 21:10:19,051 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:SELECT @@sql_mode
+spanish_learning_app  | 2026-08-04 21:10:19,051 INFO sqlalchemy.engine.Engine SELECT @@sql_mode
+spanish_learning_app  | 2026-08-04 21:10:19,051 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-04 21:10:19,052 INFO sqlalchemy.engine.Engine SELECT @@lower_case_table_names
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:SELECT @@lower_case_table_names
+spanish_learning_app  | 2026-08-04 21:10:19,052 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:BEGIN (implicit)
+spanish_learning_app  | 2026-08-04 21:10:19,052 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+spanish_learning_app  | 2026-08-04 21:10:19,052 INFO sqlalchemy.engine.Engine DESCRIBE `spanish_bot_db`.`lesson_posts`
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:DESCRIBE `spanish_bot_db`.`lesson_posts`
+spanish_learning_app  | 2026-08-04 21:10:19,052 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:COMMIT
+spanish_learning_app  | 2026-08-04 21:10:19,054 INFO sqlalchemy.engine.Engine COMMIT
+spanish_learning_app  | [1/4] База даних проініціалізована.
+spanish_learning_app  | [2/4] Запуск генерації тестового поста через LLM...
+spanish_learning_app  | INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+spanish_learning_app  | INFO:openai._base_client:Retrying request to /chat/completions in 0.491531 seconds
+spanish_learning_app  | INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+spanish_learning_app  | INFO:openai._base_client:Retrying request to /chat/completions in 0.873968 seconds
+spanish_learning_app  | INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+spanish_learning_app  | Traceback (most recent call last):
+spanish_learning_app  |   File "/app/main.py", line 64, in <module>
+spanish_learning_app  |     asyncio.run(main())
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/runners.py", line 190, in run
+spanish_learning_app  |     return runner.run(main)
+spanish_learning_app  |            ^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/runners.py", line 118, in run
+spanish_learning_app  |     return self._loop.run_until_complete(task)
+spanish_learning_app  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+spanish_learning_app  |     return future.result()
+spanish_learning_app  |            ^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/app/main.py", line 33, in main
+spanish_learning_app  |     await generate_and_save_post(
+spanish_learning_app  |   File "/app/generator/llm_pipeline.py", line 45, in generate_and_save_post
+spanish_learning_app  |     completion = await client.beta.chat.completions.parse(
+spanish_learning_app  |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/openai/resources/chat/completions/completions.py", line 1804, in parse
+spanish_learning_app  |     return await self._post(
+spanish_learning_app  |            ^^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/openai/_base_client.py", line 1992, in post
+spanish_learning_app  |     return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+spanish_learning_app  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/openai/_base_client.py", line 1777, in request
+spanish_learning_app  |     raise self._make_status_error_from_response(err.response) from None
+spanish_learning_app  | openai.RateLimitError: Error code: 429 - {'error': {'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.', 'type': 'insufficient_quota', 'param': None, 'code': 'insufficient_quota'}}
+spanish_learning_app  | Exception ignored in: <function Connection.__del__ at 0x758d0f79d580>
+spanish_learning_app  | Traceback (most recent call last):
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/aiomysql/connection.py", line 1131, in __del__
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/aiomysql/connection.py", line 339, in close
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/selector_events.py", line 864, in close
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/base_events.py", line 762, in call_soon
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/base_events.py", line 520, in _check_closed
+spanish_learning_app  | RuntimeError: Event loop is closed
+spanish_learning_app  | === Spanish Learning Bot Ecosystem Starting ===
+spanish_learning_app  | 2026-08-04 21:10:26,483 INFO sqlalchemy.engine.Engine SELECT DATABASE()
+spanish_learning_app  | 2026-08-04 21:10:26,483 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:SELECT DATABASE()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-04 21:10:26,484 INFO sqlalchemy.engine.Engine SELECT @@sql_mode
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:SELECT @@sql_mode
+spanish_learning_app  | 2026-08-04 21:10:26,484 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-04 21:10:26,484 INFO sqlalchemy.engine.Engine SELECT @@lower_case_table_names
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:SELECT @@lower_case_table_names
+spanish_learning_app  | 2026-08-04 21:10:26,484 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-04 21:10:26,484 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:BEGIN (implicit)
+spanish_learning_app  | 2026-08-04 21:10:26,485 INFO sqlalchemy.engine.Engine DESCRIBE `spanish_bot_db`.`lesson_posts`
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:DESCRIBE `spanish_bot_db`.`lesson_posts`
+spanish_learning_app  | 2026-08-04 21:10:26,485 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-04 21:10:26,486 INFO sqlalchemy.engine.Engine COMMIT
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:COMMIT
+spanish_learning_app  | [1/4] База даних проініціалізована.
+spanish_learning_app  | [2/4] Запуск генерації тестового поста через LLM...
+spanish_learning_app  | INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+spanish_learning_app  | INFO:openai._base_client:Retrying request to /chat/completions in 0.463381 seconds
+spanish_learning_app  | INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+spanish_learning_app  | INFO:openai._base_client:Retrying request to /chat/completions in 0.753418 seconds
+spanish_learning_app  | INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+spanish_learning_app  | Traceback (most recent call last):
+spanish_learning_app  |   File "/app/main.py", line 64, in <module>
+spanish_learning_app  |     asyncio.run(main())
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/runners.py", line 190, in run
+spanish_learning_app  |     return runner.run(main)
+spanish_learning_app  |            ^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/runners.py", line 118, in run
+spanish_learning_app  |     return self._loop.run_until_complete(task)
+spanish_learning_app  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+spanish_learning_app  |     return future.result()
+spanish_learning_app  |            ^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/app/main.py", line 33, in main
+spanish_learning_app  |     await generate_and_save_post(
+spanish_learning_app  |   File "/app/generator/llm_pipeline.py", line 45, in generate_and_save_post
+spanish_learning_app  |     completion = await client.beta.chat.completions.parse(
+spanish_learning_app  |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/openai/resources/chat/completions/completions.py", line 1804, in parse
+spanish_learning_app  |     return await self._post(
+spanish_learning_app  |            ^^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/openai/_base_client.py", line 1992, in post
+spanish_learning_app  |     return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+spanish_learning_app  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/openai/_base_client.py", line 1777, in request
+spanish_learning_app  |     raise self._make_status_error_from_response(err.response) from None
+spanish_learning_app  | openai.RateLimitError: Error code: 429 - {'error': {'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.', 'type': 'insufficient_quota', 'param': None, 'code': 'insufficient_quota'}}
+spanish_learning_app  | Exception ignored in: <function Connection.__del__ at 0x755d694a1580>
+spanish_learning_app  | Traceback (most recent call last):
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/aiomysql/connection.py", line 1131, in __del__
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/aiomysql/connection.py", line 339, in close
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/selector_events.py", line 864, in close
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/base_events.py", line 762, in call_soon
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/base_events.py", line 520, in _check_closed
+spanish_learning_app  | RuntimeError: Event loop is closed
+spanish_learning_app  | === Spanish Learning Bot Ecosystem Starting ===
+spanish_learning_app  | 2026-08-04 21:10:34,444 INFO sqlalchemy.engine.Engine SELECT DATABASE()
+spanish_learning_app  | 2026-08-04 21:10:34,444 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:SELECT DATABASE()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:SELECT @@sql_mode
+spanish_learning_app  | 2026-08-04 21:10:34,444 INFO sqlalchemy.engine.Engine SELECT @@sql_mode
+spanish_learning_app  | 2026-08-04 21:10:34,444 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-04 21:10:34,445 INFO sqlalchemy.engine.Engine SELECT @@lower_case_table_names
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:SELECT @@lower_case_table_names
+spanish_learning_app  | 2026-08-04 21:10:34,445 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:BEGIN (implicit)
+spanish_learning_app  | 2026-08-04 21:10:34,445 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+spanish_learning_app  | 2026-08-04 21:10:34,445 INFO sqlalchemy.engine.Engine DESCRIBE `spanish_bot_db`.`lesson_posts`
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:DESCRIBE `spanish_bot_db`.`lesson_posts`
+spanish_learning_app  | 2026-08-04 21:10:34,445 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-04 21:10:34,447 INFO sqlalchemy.engine.Engine COMMIT
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:COMMIT
+spanish_learning_app  | [1/4] База даних проініціалізована.
+spanish_learning_app  | [2/4] Запуск генерації тестового поста через LLM...
+spanish_learning_app  | INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+spanish_learning_app  | INFO:openai._base_client:Retrying request to /chat/completions in 0.466697 seconds
+spanish_learning_app  | INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+spanish_learning_app  | INFO:openai._base_client:Retrying request to /chat/completions in 0.881695 seconds
+spanish_learning_app  | INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+spanish_learning_app  | Traceback (most recent call last):
+spanish_learning_app  |   File "/app/main.py", line 64, in <module>
+spanish_learning_app  |     asyncio.run(main())
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/runners.py", line 190, in run
+spanish_learning_app  |     return runner.run(main)
+spanish_learning_app  |            ^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/runners.py", line 118, in run
+spanish_learning_app  |     return self._loop.run_until_complete(task)
+spanish_learning_app  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+spanish_learning_app  |     return future.result()
+spanish_learning_app  |            ^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/app/main.py", line 33, in main
+spanish_learning_app  |     await generate_and_save_post(
+spanish_learning_app  |   File "/app/generator/llm_pipeline.py", line 45, in generate_and_save_post
+spanish_learning_app  |     completion = await client.beta.chat.completions.parse(
+spanish_learning_app  |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/openai/resources/chat/completions/completions.py", line 1804, in parse
+spanish_learning_app  |     return await self._post(
+spanish_learning_app  |            ^^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/openai/_base_client.py", line 1992, in post
+spanish_learning_app  |     return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+spanish_learning_app  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/openai/_base_client.py", line 1777, in request
+spanish_learning_app  |     raise self._make_status_error_from_response(err.response) from None
+spanish_learning_app  | openai.RateLimitError: Error code: 429 - {'error': {'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.', 'type': 'insufficient_quota', 'param': None, 'code': 'insufficient_quota'}}
+spanish_learning_app  | Exception ignored in: <function Connection.__del__ at 0x7dcfa3da9580>
+spanish_learning_app  | Traceback (most recent call last):
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/aiomysql/connection.py", line 1131, in __del__
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/aiomysql/connection.py", line 339, in close
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/selector_events.py", line 864, in close
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/base_events.py", line 762, in call_soon
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/base_events.py", line 520, in _check_closed
+spanish_learning_app  | RuntimeError: Event loop is closed
+spanish_learning_app  | === Spanish Learning Bot Ecosystem Starting ===
+spanish_learning_app  | 2026-08-04 21:10:44,132 INFO sqlalchemy.engine.Engine SELECT DATABASE()
+spanish_learning_app  | 2026-08-04 21:10:44,132 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:SELECT DATABASE()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-04 21:10:44,133 INFO sqlalchemy.engine.Engine SELECT @@sql_mode
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:SELECT @@sql_mode
+spanish_learning_app  | 2026-08-04 21:10:44,133 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:SELECT @@lower_case_table_names
+spanish_learning_app  | 2026-08-04 21:10:44,133 INFO sqlalchemy.engine.Engine SELECT @@lower_case_table_names
+spanish_learning_app  | 2026-08-04 21:10:44,133 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-04 21:10:44,134 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:BEGIN (implicit)
+spanish_learning_app  | 2026-08-04 21:10:44,134 INFO sqlalchemy.engine.Engine DESCRIBE `spanish_bot_db`.`lesson_posts`
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:DESCRIBE `spanish_bot_db`.`lesson_posts`
+spanish_learning_app  | 2026-08-04 21:10:44,134 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:COMMIT
+spanish_learning_app  | 2026-08-04 21:10:44,135 INFO sqlalchemy.engine.Engine COMMIT
+spanish_learning_app  | [1/4] База даних проініціалізована.
+spanish_learning_app  | [2/4] Запуск генерації тестового поста через LLM...
+spanish_learning_app  | INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+spanish_learning_app  | INFO:openai._base_client:Retrying request to /chat/completions in 0.443827 seconds
+spanish_learning_app  | INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+spanish_learning_app  | INFO:openai._base_client:Retrying request to /chat/completions in 0.821388 seconds
+spanish_learning_app  | INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+spanish_learning_app  | Traceback (most recent call last):
+spanish_learning_app  |   File "/app/main.py", line 64, in <module>
+spanish_learning_app  |     asyncio.run(main())
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/runners.py", line 190, in run
+spanish_learning_app  |     return runner.run(main)
+spanish_learning_app  |            ^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/runners.py", line 118, in run
+spanish_learning_app  |     return self._loop.run_until_complete(task)
+spanish_learning_app  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+spanish_learning_app  |     return future.result()
+spanish_learning_app  |            ^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/app/main.py", line 33, in main
+spanish_learning_app  |     await generate_and_save_post(
+spanish_learning_app  |   File "/app/generator/llm_pipeline.py", line 45, in generate_and_save_post
+spanish_learning_app  |     completion = await client.beta.chat.completions.parse(
+spanish_learning_app  |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/openai/resources/chat/completions/completions.py", line 1804, in parse
+spanish_learning_app  |     return await self._post(
+spanish_learning_app  |            ^^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/openai/_base_client.py", line 1992, in post
+spanish_learning_app  |     return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+spanish_learning_app  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/openai/_base_client.py", line 1777, in request
+spanish_learning_app  |     raise self._make_status_error_from_response(err.response) from None
+spanish_learning_app  | openai.RateLimitError: Error code: 429 - {'error': {'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.', 'type': 'insufficient_quota', 'param': None, 'code': 'insufficient_quota'}}
+spanish_learning_app  | Exception ignored in: <function Connection.__del__ at 0x774fd3c39580>
+spanish_learning_app  | Traceback (most recent call last):
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/aiomysql/connection.py", line 1131, in __del__
+spanish_learning_app  |   File "/usr/local/lib/python3.11/site-packages/aiomysql/connection.py", line 339, in close
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/selector_events.py", line 864, in close
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/base_events.py", line 762, in call_soon
+spanish_learning_app  |   File "/usr/local/lib/python3.11/asyncio/base_events.py", line 520, in _check_closed
+spanish_learning_app  | RuntimeError: Event loop is closed
+[Kspanish_learning_app exited with code 1 (restarting)

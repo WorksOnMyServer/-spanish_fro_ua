@@ -1,0 +1,109 @@
+spanish_learning_app  | === Spanish Learning Bot Ecosystem Starting ===
+spanish_learning_app  | 2026-08-06 15:11:05,809 INFO sqlalchemy.engine.Engine SELECT DATABASE()
+spanish_learning_app  | 2026-08-06 15:11:05,809 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:SELECT DATABASE()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-06 15:11:05,810 INFO sqlalchemy.engine.Engine SELECT @@sql_mode
+spanish_learning_app  | 2026-08-06 15:11:05,810 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:SELECT @@sql_mode
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-06 15:11:05,810 INFO sqlalchemy.engine.Engine SELECT @@lower_case_table_names
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:SELECT @@lower_case_table_names
+spanish_learning_app  | 2026-08-06 15:11:05,810 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:BEGIN (implicit)
+spanish_learning_app  | 2026-08-06 15:11:05,811 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+spanish_learning_app  | 2026-08-06 15:11:05,811 INFO sqlalchemy.engine.Engine DESCRIBE `spanish_bot_db`.`system_settings`
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:DESCRIBE `spanish_bot_db`.`system_settings`
+spanish_learning_app  | 2026-08-06 15:11:05,811 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-06 15:11:05,812 INFO sqlalchemy.engine.Engine DESCRIBE `spanish_bot_db`.`levels`
+spanish_learning_app  | 2026-08-06 15:11:05,812 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:DESCRIBE `spanish_bot_db`.`levels`
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:DESCRIBE `spanish_bot_db`.`topics`
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-06 15:11:05,813 INFO sqlalchemy.engine.Engine DESCRIBE `spanish_bot_db`.`topics`
+spanish_learning_app  | 2026-08-06 15:11:05,813 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:DESCRIBE `spanish_bot_db`.`daily_lessons`
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-06 15:11:05,813 INFO sqlalchemy.engine.Engine DESCRIBE `spanish_bot_db`.`daily_lessons`
+spanish_learning_app  | 2026-08-06 15:11:05,813 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | 2026-08-06 15:11:05,814 INFO sqlalchemy.engine.Engine DESCRIBE `spanish_bot_db`.`lexical_units`
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:DESCRIBE `spanish_bot_db`.`lexical_units`
+spanish_learning_app  | 2026-08-06 15:11:05,814 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-06 15:11:05,815 INFO sqlalchemy.engine.Engine DESCRIBE `spanish_bot_db`.`quizzes`
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:DESCRIBE `spanish_bot_db`.`quizzes`
+spanish_learning_app  | 2026-08-06 15:11:05,815 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-06 15:11:05,816 INFO sqlalchemy.engine.Engine COMMIT
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:COMMIT
+spanish_learning_app  | [1/3] База даних проініціалізована.
+spanish_learning_app  | INFO:apscheduler.scheduler:Adding job tentatively -- it will be properly scheduled when the scheduler starts
+spanish_learning_app  | INFO:apscheduler.scheduler:Adding job tentatively -- it will be properly scheduled when the scheduler starts
+spanish_learning_app  | INFO:apscheduler.scheduler:Adding job tentatively -- it will be properly scheduled when the scheduler starts
+spanish_learning_app  | INFO:apscheduler.scheduler:Added job "job_morning_words" to job store "default"
+spanish_learning_app  | INFO:apscheduler.scheduler:Added job "job_afternoon_quiz" to job store "default"
+spanish_learning_app  | INFO:apscheduler.scheduler:Added job "job_evening_text" to job store "default"
+spanish_learning_app  | INFO:apscheduler.scheduler:Scheduler started
+spanish_learning_app  | INFO:bot.scheduler:APScheduler успішно запущено (Часовий пояс: Europe/Kyiv)!
+spanish_learning_app  | [2/3] Планувальник автопостингу запущено.
+spanish_learning_app  | [3/3] Бот успішно запущений і готовий до роботи!
+spanish_learning_app  | INFO:aiogram.dispatcher:Start polling
+spanish_learning_app  | INFO:aiogram.dispatcher:Run polling for bot @tio_spanish_bot id=8925706370 - '@spanish_daily_bot'
+spanish_learning_app  | === Spanish Learning Bot Ecosystem Starting ===
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:SELECT DATABASE()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-06 15:11:19,045 INFO sqlalchemy.engine.Engine SELECT DATABASE()
+spanish_learning_app  | 2026-08-06 15:11:19,045 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:SELECT @@sql_mode
+spanish_learning_app  | 2026-08-06 15:11:19,046 INFO sqlalchemy.engine.Engine SELECT @@sql_mode
+spanish_learning_app  | 2026-08-06 15:11:19,046 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-06 15:11:19,046 INFO sqlalchemy.engine.Engine SELECT @@lower_case_table_names
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:SELECT @@lower_case_table_names
+spanish_learning_app  | 2026-08-06 15:11:19,046 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:BEGIN (implicit)
+spanish_learning_app  | 2026-08-06 15:11:19,046 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+spanish_learning_app  | 2026-08-06 15:11:19,047 INFO sqlalchemy.engine.Engine DESCRIBE `spanish_bot_db`.`system_settings`
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:DESCRIBE `spanish_bot_db`.`system_settings`
+spanish_learning_app  | 2026-08-06 15:11:19,047 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-06 15:11:19,048 INFO sqlalchemy.engine.Engine DESCRIBE `spanish_bot_db`.`levels`
+spanish_learning_app  | 2026-08-06 15:11:19,048 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:DESCRIBE `spanish_bot_db`.`levels`
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:DESCRIBE `spanish_bot_db`.`topics`
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-06 15:11:19,048 INFO sqlalchemy.engine.Engine DESCRIBE `spanish_bot_db`.`topics`
+spanish_learning_app  | 2026-08-06 15:11:19,048 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | 2026-08-06 15:11:19,049 INFO sqlalchemy.engine.Engine DESCRIBE `spanish_bot_db`.`daily_lessons`
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:DESCRIBE `spanish_bot_db`.`daily_lessons`
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-06 15:11:19,049 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:DESCRIBE `spanish_bot_db`.`lexical_units`
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-06 15:11:19,050 INFO sqlalchemy.engine.Engine DESCRIBE `spanish_bot_db`.`lexical_units`
+spanish_learning_app  | 2026-08-06 15:11:19,050 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:DESCRIBE `spanish_bot_db`.`quizzes`
+spanish_learning_app  | 2026-08-06 15:11:19,050 INFO sqlalchemy.engine.Engine DESCRIBE `spanish_bot_db`.`quizzes`
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:[raw sql] ()
+spanish_learning_app  | 2026-08-06 15:11:19,050 INFO sqlalchemy.engine.Engine [raw sql] ()
+spanish_learning_app  | 2026-08-06 15:11:19,051 INFO sqlalchemy.engine.Engine COMMIT
+spanish_learning_app  | INFO:sqlalchemy.engine.Engine:COMMIT
+spanish_learning_app  | [1/3] База даних проініціалізована.
+spanish_learning_app  | INFO:apscheduler.scheduler:Adding job tentatively -- it will be properly scheduled when the scheduler starts
+spanish_learning_app  | INFO:apscheduler.scheduler:Adding job tentatively -- it will be properly scheduled when the scheduler starts
+spanish_learning_app  | INFO:apscheduler.scheduler:Adding job tentatively -- it will be properly scheduled when the scheduler starts
+spanish_learning_app  | INFO:apscheduler.scheduler:Added job "job_morning_words" to job store "default"
+spanish_learning_app  | INFO:apscheduler.scheduler:Added job "job_afternoon_quiz" to job store "default"
+spanish_learning_app  | INFO:apscheduler.scheduler:Added job "job_evening_text" to job store "default"
+spanish_learning_app  | INFO:apscheduler.scheduler:Scheduler started
+spanish_learning_app  | INFO:bot.scheduler:APScheduler успішно запущено (Часовий пояс: Europe/Kyiv)!
+spanish_learning_app  | [2/3] Планувальник автопостингу запущено.
+spanish_learning_app  | [3/3] Бот успішно запущений і готовий до роботи!
+spanish_learning_app  | INFO:aiogram.dispatcher:Start polling
+spanish_learning_app  | INFO:aiogram.dispatcher:Run polling for bot @tio_spanish_bot id=8925706370 - '@spanish_daily_bot'
+
