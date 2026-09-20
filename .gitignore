@@ -1,3 +1,19 @@
+# Зєнні середовища та секрети
 .env
+
+# Локальні аудіофайли та кеш
 audio/
-main.py.GPT
+*.log
+start.log
+file.log
+
+# Python кеш
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+env/
+
+# Docker
+.docker/

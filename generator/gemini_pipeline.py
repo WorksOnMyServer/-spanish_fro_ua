@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import logging
 import asyncio
@@ -10,15 +11,12 @@ from pydantic import BaseModel, Field
 from database.connection import AsyncSessionLocal
 from database.crud import save_generated_lesson
 
-# Налаштування логування
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Ініціалізація клієнта Gemini API
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
-# --- Pydantic-схеми для валідації JSON від Gemini ---
 
 class WordSchema(BaseModel):
     text_es: str = Field(description="Слово або фраза іспанською")
@@ -26,15 +24,18 @@ class WordSchema(BaseModel):
     part_of_speech: str = Field(description="Частина мови або тип (noun, verb, chunk)")
     example_es: str = Field(description="Приклад вживання іспанською")
     example_ua: str = Field(description="Переклад прикладу українською")
-    grammar_tag: str = Field(description="Короткий тег граматики (напр. presente_indicativo)")
+    grammar_tag: str = Field(description="Короткий тег граматики")
+
 
 class GrammarSchema(BaseModel):
     title: str = Field(description="Заголовок мікро-правила")
     rule_text: str = Field(description="Пояснення правила українською (2-3 речення)")
 
+
 class EveningTextSchema(BaseModel):
-    text_es: str = Field(description="Короткий текст іспанською (3-5 речень), що містить вивчені слова")
-    text_ua: str = Field(description="Точний та природний переклад тексту українською")
+    text_es: str = Field(description="Короткий текст іспанською (3-5 речень)")
+    text_ua: str = Field(description="Точний переклад тексту українською")
+
 
 class QuizSchema(BaseModel):
     question_es: str = Field(description="Питання іспанською мовою")
@@ -42,6 +43,7 @@ class QuizSchema(BaseModel):
     options: list[str] = Field(description="4 варіанти відповідей")
     correct_index: int = Field(description="Індекс правильної відповіді (0, 1, 2 або 3)")
     explanation: str = Field(description="Пояснення відповіді українською")
+
 
 class LessonGeneratedData(BaseModel):
     topic_title_ua: str
@@ -53,23 +55,54 @@ class LessonGeneratedData(BaseModel):
     quizzes: list[QuizSchema]
 
 
-# --- Генерація аудіо через edge-tts ---
+def clean_text_for_tts(text: str) -> str:
+    """Очищає спецсимволи (/, (), {}, тощо), які TTS може озвучувати буквально."""
+    if not text:
+        return ""
+    # Замінюємо слеші та дужки на пробіли або крапки, щоб синтезатор читав текст плавно
+    cleaned = re.sub(r'[/\\()\[\]{}|]', ' ', text)
+    # Прибираємо зайві пробіли
+    cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+    return cleaned
 
-async def generate_audio_file(text_es: str, output_path: str, voice: str = "es-ES-AlvaroNeural"):
-    """Генерує MP3-файл із вимовою іспанського тексту."""
+
+async def generate_audio_file(text_es: str, text_ua: str, output_path: str):
+    """
+    Генерує єдиний MP3-файл, де послідовно озвучується як іспанський текст (голосовим движком es-ES),
+    так і український переклад (голосовим движком uk-UA), без озвучування спецсимволів.
+    """
     try:
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        communicate = edge_tts.Communicate(text_es, voice)
-        await communicate.save(output_path)
-        logger.info(f"Аудіо згенеровано: {output_path}")
+        
+        # Очищаємо текст від непотрібних символів
+        clean_es = clean_text_for_tts(text_es)
+        clean_ua = clean_text_for_tts(text_ua)
+
+        # Генеруємо іспанську частину (використовуємо іспанський голос)
+        es_path = f"{output_path}.es.mp3"
+        comm_es = edge_tts.Communicate(clean_es, "es-ES-AlvaroNeural")
+        await comm_es.save(es_path)
+
+        # Генеруємо українську частину (використовуємо український голос, напр. Остап або Поліна)
+        ua_path = f"{output_path}.ua.mp3"
+        comm_ua = edge_tts.Communicate(clean_ua, "uk-UA-OstapNeural")
+        await comm_ua.save(ua_path)
+
+        # Об'єднуємо обидва MP3 файли в один фінальний
+        with open(output_path, 'wb') as outfile:
+            for p in [es_path, ua_path]:
+                if os.path.exists(p):
+                    with open(p, 'rb') as infile:
+                        outfile.write(infile.read())
+                    os.remove(p) # Видаляємо тимчасові частини
+
+        logger.info(f"Двомовне аудіо успішно згенеровано: {output_path}")
     except Exception as e:
-        logger.error(f"Помилка генерації аудіо для '{text_es}': {e}")
+        logger.error(f"Помилка генерації двомовного аудіо: {e}")
 
-
-# --- Основна функція генерації уроку ---
 
 async def generate_daily_lesson(topic_ua: str, topic_es: str, level: str = "A1", day_number: int = 1) -> dict:
-    """Генерує повний урок через Gemini та створює аудіофайли."""
+    """Генерує повний урок через Gemini та створює аудіофайли в правильній послідовності."""
     if not client:
         raise ValueError("GEMINI_API_KEY не знайдено в змінних оточення!")
 
@@ -77,21 +110,12 @@ async def generate_daily_lesson(topic_ua: str, topic_es: str, level: str = "A1",
     Ти професійний викладач іспанської мови для україномовних студентів.
     Створи повноцінний навчальний блок для рівня {level} на тему: "{topic_ua}" ({topic_es}).
 
-    КРИТИЧНІ ВИМОГИ ДО КІЛЬКОСТІ ЛЕКСИКИ (words):
-    1. Якщо тема є фундаментальною, системною або перелічувальною (наприклад: "Числа", "Дні тижня та місяці", "Алфавіт", "Кольори", "Пори року"):
-       - Потрібно розкрити тему МАКСИМАЛЬНО ПОВНО. 
-       - Надай від 7 до 12 основних слів/чисел/елементів (наприклад, усі 7 днів тижня; ключові числа від 0 до 100; основні кольори тощо).
-    2. Якщо тема є загальнолексичною або побутовою (наприклад: "В ресторані", "Орієнтування в місті", "В готелі"):
-       - Надай 6–8 найважливіших уживаних слів та готових фраз-шаблонів (chunks).
-    
-    ДОДАТКОВІ ВИМОГИ:
-    - Для КОЖНОГО слова обов'язково надай точний приклад речення (example_es) та його переклад (example_ua).
-    - Дай 1 мікро-правило граматики (коротке, зрозуміле, 2-3 речення).
-    - Напиши вечірній зв'язний текст (3-5 речень), який застосовує нові слова та граматику теми.
-    - Створи 1-2 квізи з 4 варіантами відповідей для перевірки знань. Обов'язково вкажи питання іспанською (question_es) та його переклад українською (question_ua).
+    КРИТИЧНІ ВИМОГИ:
+    - Надай 10-12 найважливіших слів та фраз із точним прикладом та перекладом.
+    - Дай 1 мікро-правило граматики.
+    - Напиши вечірній зв'язний текст (3-5 речень) із перекладом.
+    - Створи 3 складних квізи з варіантами відповідей.
     """
-
-    logger.info(f"Надсилання запиту до Gemini для теми: {topic_ua}...")
 
     response = client.models.generate_content(
         model='gemini-2.5-flash',
@@ -106,32 +130,74 @@ async def generate_daily_lesson(topic_ua: str, topic_es: str, level: str = "A1",
     lesson_data = json.loads(response.text)
     lesson_data["day_number"] = day_number
 
-    # Папка для аудіофайлів конкретного дня
     audio_dir = f"/app/audio/day_{day_number}"
+    os.makedirs(audio_dir, exist_ok=True)
 
-    # 1. Створення ЄДИНОГО аудіофайлу для всього блоку слів
-    words_es_list = [word["text_es"] for word in lesson_data["words"]]
-    combined_words_text = ". ".join(words_es_list) + "."
+# Послідовне генерування аудіо для кожного слова у потрібному порядку з обрізанням слешів:
+    # 1. Слово (es) -> 2. Переклад (ua) -> 3. Приклад (es) -> 4. Переклад прикладу (ua)
+    temp_files = []
     
+    for idx, word in enumerate(lesson_data["words"]):
+        # Беремо текст до слешу (якщо він є) та очищаємо
+        raw_es = word['text_es'].split('/')[0] if word['text_es'] else ""
+        raw_ua = word['text_ua'].split('/')[0] if word['text_ua'] else ""
+
+        w_es = clean_text_for_tts(raw_es)
+        w_ua = clean_text_for_tts(raw_ua)
+        ex_es = clean_text_for_tts(word['example_es'])
+        ex_ua = clean_text_for_tts(word['example_ua'])
+
+        # Шматочки для конкретного слова
+        word_parts = [
+            (w_es, "es-ES-AlvaroNeural"),
+            (w_ua, "uk-UA-OstapNeural"),
+            (ex_es, "es-ES-AlvaroNeural"),
+            (ex_ua, "uk-UA-OstapNeural")
+        ]
+
+        for p_idx, (text, voice) in enumerate(word_parts):
+            if not text:
+                continue
+            part_path = f"{audio_dir}/temp_w_{idx}_{p_idx}.mp3"
+            try:
+                comm = edge_tts.Communicate(text, voice)
+                await comm.save(part_path)
+                temp_files.append(part_path)
+            except Exception as e:
+                logger.error(f"Помилка генерації частини аудіо: {e}")
+    # Об'єднуємо всі частини в один фінальний words_block.mp3
     words_audio_path = f"{audio_dir}/words_block.mp3"
-    await generate_audio_file(combined_words_text, words_audio_path)
-    
-    # Записуємо шлях до аудіо блоку на рівні самого уроку!
-    # У словах НЕ прописуємо audio_path, щоб бот не дублював його.
+    with open(words_audio_path, 'wb') as outfile:
+        for p in temp_files:
+            if os.path.exists(p):
+                with open(p, 'rb') as infile:
+                    outfile.write(infile.read())
+                os.remove(p)
+
     lesson_data["words_audio_path"] = words_audio_path
 
-    # 2. Генерація аудіо для вечірнього тексту
+#    # Генерація аудіо для вечірнього тексту (спочатку іспанська, потім українська)
+#   evening_audio_path = f"{audio_dir}/evening_text.mp3"
+#    await generate_audio_file(
+#        lesson_data["evening_text"]["text_es"],
+#        lesson_data["evening_text"]["text_ua"],
+#        evening_audio_path
+#    )
+#    lesson_data["evening_text"]["audio_path"] = evening_audio_path
+
+#    return lesson_data
+
+# Генерація аудіо для вечірнього тексту (ТІЛЬКИ іспанська мова)
     evening_audio_path = f"{audio_dir}/evening_text.mp3"
-    await generate_audio_file(lesson_data["evening_text"]["text_es"], evening_audio_path)
+    try:
+        os.makedirs(audio_dir, exist_ok=True)
+        clean_evening_es = clean_text_for_tts(lesson_data["evening_text"]["text_es"])
+        comm_es = edge_tts.Communicate(clean_evening_es, "es-ES-AlvaroNeural")
+        await comm_es.save(evening_audio_path)
+        logger.info(f"Вечірнє аудіо (тільки es) згенеровано: {evening_audio_path}")
+    except Exception as e:
+        logger.error(f"Помилка генерації вечірнього аудіо: {e}")
+
     lesson_data["evening_text"]["audio_path"] = evening_audio_path
 
     return lesson_data
-
-# --- Обгортка для генерації та збереження в БД ---
-
-async def generate_and_save_post_gemini(topic_ua: str, topic_es: str, level: str = "A1", day_number: int = 1):
-    """Генерує урок і відразу зберігає його в базі даних."""
-    lesson_data = await generate_daily_lesson(topic_ua, topic_es, level, day_number)
-    async with AsyncSessionLocal() as session:
-        lesson = await save_generated_lesson(session, lesson_data)
-        return lesson
