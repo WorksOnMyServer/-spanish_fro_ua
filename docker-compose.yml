@@ -11,13 +11,8 @@ services:
       MYSQL_USER: bot_user
       MYSQL_PASSWORD: bot_password
       TZ: Europe/Kyiv
-<<<<<<< HEAD
 #    ports:
 #      - "3306:3306"
-=======
-    ports:
-      - "3306:3306"
->>>>>>> ef3c3ad921dbc23b0803e3433be3742c5e1cd546
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:

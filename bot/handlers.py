@@ -2,7 +2,7 @@ import os
 import logging
 from aiogram import Bot, Router, types, F
 from aiogram.filters import Command
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 
 from database.connection import AsyncSessionLocal
 from database.crud import (
@@ -13,10 +13,7 @@ from database.crud import (
     set_current_publishing_day
 )
 from generator.gemini_pipeline import generate_daily_lesson
-<<<<<<< HEAD
 from generator.topics import DEFAULT_TOPICS
-=======
->>>>>>> ef3c3ad921dbc23b0803e3433be3742c5e1cd546
 from bot.scheduler import job_morning_words, job_afternoon_quiz, job_evening_text
 
 router = Router()
@@ -25,69 +22,23 @@ logger = logging.getLogger(__name__)
 # ID адмінів з .env
 ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip()]
 
-<<<<<<< HEAD
-=======
-# Розширений список 50 тем для рівнів A1-A2
-DEFAULT_TOPICS = [
-    {"ua": "Знайомство та привітання", "es": "Saludos y presentaciones"},
-#    {"ua": "Алфавіт та вимова", "es": "El alfabeto y la pronunciación"},
-    {"ua": "Числа від 0 до 100", "es": "Los números del 0 al 100"},
-    {"ua": "Дні тижня та місяці", "es": "Los días de la semana y los meses"},
-    {"ua": "Пори року та погода", "es": "Las estaciones y el tiempo"},
-    {"ua": "Кольори та форми", "es": "Los colores y las formas"},
-    {"ua": "Сім'я та родичі", "es": "La familia y los parientes"},
-    {"ua": "Опис зовнішності та характеру", "es": "Descripción física y de carácter"},
-    {"ua": "Професії та діяльність", "es": "Las profesiones y los oficios"},
-    {"ua": "Країни та національності", "es": "Países y nacionalidades"},
-    {"ua": "Мови світу", "es": "Las lenguas del mundo"},
-    {"ua": "Особисті дані та анкета", "es": "Datos personales y formulario"},
-    {"ua": "Мій дім та квартира", "es": "Mi casa y mi piso"},
-    {"ua": "Меблі та інтер'єр", "es": "Los muebles y la decoración"},
-    {"ua": "Побутова техніка", "es": "Los electrodomésticos"},
-    {"ua": "Одяг та взуття", "es": "La ropa y el calzado"},
-    {"ua": "Аксесуари та прикраси", "es": "Los accesorios y las joyas"},
-    {"ua": "Їжа та основні продукты", "es": "La comida y los alimentos básicos"},
-    {"ua": "Фрукти та овочі", "es": "Las frutas y las verduras"},
-    {"ua": "Напої", "es": "Las bebidas"},
-    {"ua": "В ресторані та кафе", "es": "En el restaurante y la cafetería"},
-    {"ua": "Покупки та супермаркет", "es": "Las compras y el supermercado"},
-    {"ua": "Ціни та гроші", "es": "Los precios y el dinero"},
-    {"ua": "Розпорядок дня", "es": "La rutina diaria"},
-    {"ua": "Годинник та час", "es": "El reloj y la hora"},
-    {"ua": "Вільний час та хобі", "es": "El tiempo libre y los aficiones"},
-    {"ua": "Спорт та активність", "es": "El deporte y la actividad física"},
-    {"ua": "Музика та мистецтво", "es": "La música y el arte"},
-    {"ua": "Місто та його інфраструктура", "es": "La ciudad y la infraestructura"},
-    {"ua": "Орієнтування в місті та напрямки", "es": "Pedir y dar direcciones"},
-    {"ua": "Транспорт та квитки", "es": "El transporte y los billetes"},
-    {"ua": "Подорожі та відпочинок", "es": "Los viajes y las vacaciones"},
-    {"ua": "В готелі", "es": "En el hotel"},
-    {"ua": "На аеропорту та вокзалі", "es": "En el aeropuerto y la estación"},
-    {"ua": "Тварини (домашні та дикі)", "es": "Los animales (domésticos y salvajes)"},
-    {"ua": "Природа та навколишнє середовище", "es": "La naturaleza y el medio ambiente"},
-    {"ua": "Частини тіла", "es": "Las partes del cuerpo"},
-    {"ua": "Здоров'я та самопочуття", "es": "La salud y el estado físico"},
-    {"ua": "У лікаря та в аптеці", "es": "En el médico y en la farmacia"},
-    {"ua": "Навчання та школа", "es": "Los estudios y la escuela"},
-    {"ua": "Шкільне та офісне приладдя", "es": "El material escolar y de oficina"},
-    {"ua": "Робочий день та офіс", "es": "El día laborable y la oficina"},
-    {"ua": "Свята та традиції", "es": "Las fiestas y las tradiciones"},
-    {"ua": "Дні народження та подарунки", "es": "Los cumpleaños y los regalos"},
-    {"ua": "Емоції та почуття", "es": "Las emociones y los sentimientos"},
-    {"ua": "Вподобання (що подобається і ні)", "es": "Gustos y preferencias"},
-    {"ua": "Географія та сторони світу", "es": "La geografía y los puntos cardinales"},
-    {"ua": "Технології та гаджети", "es": "La tecnología y los dispositivos"},
-    {"ua": "Соціальні мережі та інтернет", "es": "Las redes sociales e internet"},
-    {"ua": "Плани на майбутнє", "es": "Planes para el futuro"}
-]
-
->>>>>>> ef3c3ad921dbc23b0803e3433be3742c5e1cd546
 def is_admin(user_id: int) -> bool:
     """Перевірка чи користувач є адміном."""
     return not ADMIN_IDS or user_id in ADMIN_IDS
 
 
-# --- 1. /start з меню адміна ---
+def get_admin_reply_keyboard() -> ReplyKeyboardMarkup:
+    """Постійна клавіатура внизу екрана для швидкого доступу."""
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="✨ Згенерувати наступний"), KeyboardButton(text="📊 Статус БД")],
+            [KeyboardButton(text="👁 Переглянути завтра"), KeyboardButton(text="📤 Меню публікацій")] # <--- Прибрали рядок із "Запушити день зараз"
+        ],
+        resize_keyboard=True
+    )
+
+
+# --- 1. /start з меню адміна та нижньою клавіатурою ---
 
 @router.message(Command("start"))
 async def cmd_start(message: types.Message):
@@ -98,15 +49,13 @@ async def cmd_start(message: types.Message):
     text = (
         "⚙️ <b>Панель управління адміна:</b>\n\n"
         "<b>Доступні команди:</b>\n"
-        "🔹 /generate — Згенерувати наступний день через Gemini\n"
+        "🔹 /generate [Рівень] [Тема] — Згенерувати тему (напр. <code>/generate A2 майбутній час</code>)\n"
         "🔹 /show — Переглянути запланований контент на завтра\n"
         "🔹 /set_day [N] — Встановити поточний день публікацій (напр. /set_day 1)\n"
         "🔹 /force_today — Запушити всі пости дня в канал прямо зараз\n"
-<<<<<<< HEAD
-        "🔹 /publish — Опублікувати ранок/квіз/вечір ОКРЕМО, без прив'язки до таймера\n"
-=======
->>>>>>> ef3c3ad921dbc23b0803e3433be3742c5e1cd546
-        "🔹 /status — Стан бази даних та черги контенту\n"
+        "🔹 /publish — Опублікувати ранок/квіз/вечір ОКРЕМО\n"
+        "🔹 /status — Стан бази даних та черги контенту\n\n"
+        "<i>💡 Також ви можете надіслати сюди картинку чи відео з підписом, і я опублікую їх у канал!</i>"
     )
     
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
@@ -116,17 +65,43 @@ async def cmd_start(message: types.Message):
         ],
         [
             InlineKeyboardButton(text="📊 Стан БД", callback_data="admin_status"),
-            InlineKeyboardButton(text="🚀 Запушити день зараз", callback_data="admin_force_today")
-<<<<<<< HEAD
+            #InlineKeyboardButton(text="🚀 Запушити день зараз", callback_data="admin_force_today")
         ],
         [
             InlineKeyboardButton(text="📤 Публікація частинами", callback_data="admin_publish_menu")
-=======
->>>>>>> ef3c3ad921dbc23b0803e3433be3742c5e1cd546
         ]
     ])
 
     await message.answer(text, parse_mode="HTML", reply_markup=keyboard)
+    await message.answer("Скористайтеся кнопками керування нижче 👇", reply_markup=get_admin_reply_keyboard())
+
+
+# --- Обробники кнопок нижньої панелі ---
+
+@router.message(F.text == "✨ Згенерувати наступний")
+async def btn_generate(message: types.Message, bot: Bot):
+    if is_admin(message.from_user.id):
+        await cmd_generate(message, bot)
+
+@router.message(F.text == "📊 Статус БД")
+async def btn_status(message: types.Message):
+    if is_admin(message.from_user.id):
+        await cmd_status(message)
+
+@router.message(F.text == "👁 Переглянути завтра")
+async def btn_show(message: types.Message):
+    if is_admin(message.from_user.id):
+        await cmd_show(message)
+
+@router.message(F.text == "🚀 Запушити день зараз")
+async def btn_force(message: types.Message, bot: Bot):
+    if is_admin(message.from_user.id):
+        await cmd_force_today(message, bot)
+
+@router.message(F.text == "📤 Меню публікацій")
+async def btn_publish(message: types.Message):
+    if is_admin(message.from_user.id):
+        await cmd_publish_menu(message)
 
 
 # --- 2. /status — Перевірка стану контенту ---
@@ -153,11 +128,11 @@ async def cmd_status(event: types.Message | types.CallbackQuery):
         await event.answer(text, parse_mode="HTML")
 
 
-# --- 3. /generate — Генерація нового дня через Gemini ---
+# --- 3. /generate — Генерація уроку (підтримка довільних тем та рівнів) ---
 
 @router.message(Command("generate"))
 @router.callback_query(F.data == "admin_generate")
-async def cmd_generate(event: types.Message | types.CallbackQuery):
+async def cmd_generate(event: types.Message | types.CallbackQuery, bot: Bot = None):
     user_id = event.from_user.id
     if not is_admin(user_id):
         return
@@ -168,25 +143,47 @@ async def cmd_generate(event: types.Message | types.CallbackQuery):
     else:
         msg = event
 
-    status_msg = await msg.answer("⏳ Генерація нового уроку та аудіофайлів через Gemini API (~15 сек)...")
+    # Парсинг аргументів команди (наприклад: /generate A2 утворення майбутнього часу)
+    text_payload = msg.text if hasattr(msg, "text") and msg.text else ""
+    args = text_payload.split(maxsplit=2)
+    
+    custom_level = "A1"
+    custom_topic_ua = None
+
+    if len(args) >= 2:
+        potential_level = args[1].upper()
+        if potential_level in ["A1", "A2", "B1", "B2"]:
+            custom_level = potential_level
+            if len(args) >= 3:
+                custom_topic_ua = args[2]
+        else:
+            custom_topic_ua = text_payload.replace("/generate", "").strip()
+
+    status_msg = await msg.answer(f"⏳ Генерація уроку (рівень {custom_level}) через Gemini API (~15 сек)...")
 
     try:
         async with AsyncSessionLocal() as session:
             max_day = await get_max_day_number(session)
             next_day = max_day + 1
             
-            topic_info = DEFAULT_TOPICS[(next_day - 1) % len(DEFAULT_TOPICS)]
+            if custom_topic_ua:
+                topic_ua = custom_topic_ua
+                topic_es = custom_topic_ua
+            else:
+                topic_info = DEFAULT_TOPICS[(next_day - 1) % len(DEFAULT_TOPICS)]
+                topic_ua = topic_info["ua"]
+                topic_es = topic_info["es"]
 
             lesson_data = await generate_daily_lesson(
-                topic_ua=topic_info["ua"],
-                topic_es=topic_info["es"],
-                level="A1",
+                topic_ua=topic_ua,
+                topic_es=topic_es,
+                level=custom_level,
                 day_number=next_day
             )
             await save_generated_lesson(session, lesson_data)
 
         await status_msg.edit_text(
-            f"✅ <b>Урок №{next_day} ({topic_info['ua']}) успішно згенеровано!</b>\n"
+            f"✅ <b>Урок №{next_day} ({topic_ua}) [Рівень {custom_level}] успішно згенеровано!</b>\n"
             f"Введіть /show для перегляду та підтвердження.", 
             parse_mode="HTML"
         )
@@ -347,42 +344,43 @@ async def process_regenerate(callback: types.CallbackQuery):
     except Exception as e:
         logger.error(f"Помилка при перегенерації: {e}")
         await callback.message.answer(f"❌ Помилка під час перегенерації: {e}")
-<<<<<<< HEAD
 
 
-# --- 8. Ручна публікація ОКРЕМИХ частин уроку (незалежно від APScheduler) ---
-#
-# job_morning_words / job_afternoon_quiz / job_evening_text — це ті самі
-# функції, що викликає таймер (bot/scheduler.py). Тут вони просто
-# запускаються вручну, по одній, без очікування 08:30 / 12:30 / 18:30.
-#
-# ⚠️ Важливий нюанс: job_evening_text сама інкрементує
-# current_publishing_day в БД (переводить бота на наступний день).
-# Це поведінка самої job-функції, і вона зберігається тут теж —
-# ручний запуск вечірньої частини так само посуне лічильник дня вперед.
+# --- 8. Ручна публікація медіа (фото, відео, документи) в канал ---
+
+@router.message(F.photo | F.video | F.document)
+async def forward_media_to_channel(message: types.Message):
+    user_id = message.from_user.id
+    if not is_admin(user_id):
+        return
+
+    channel_id = os.getenv("CHANNEL_ID")
+    if not channel_id:
+        await message.answer("⚠️ Не вказано `CHANNEL_ID` у файлі .env!")
+        return
+
+    try:
+        await message.send_copy(chat_id=channel_id)
+        await message.answer("✅ Медіа успішно опубліковано в канал!")
+    except Exception as e:
+        logger.error(f"Помилка при публікації медіа в канал: {e}")
+        await message.answer(f"❌ Не вдалося опублікувати: {e}")
+
+
+# --- 9. Меню ручної публікації частин уроку ---
 
 def get_publish_keyboard() -> InlineKeyboardMarkup:
-    """Кнопки для ручної, поштучної публікації частин уроку в канал."""
     return InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(text="☀️ Ранок (слова)", callback_data="publish_morning"),
-        ],
-        [
-            InlineKeyboardButton(text="🌤 Обід (квіз)", callback_data="publish_afternoon"),
-        ],
-        [
-            InlineKeyboardButton(text="🌙 Вечір (граматика)", callback_data="publish_evening"),
-        ],
-        [
-            InlineKeyboardButton(text="🚀 Все одразу", callback_data="admin_force_today"),
-        ],
+        [InlineKeyboardButton(text="☀️ Ранок (слова)", callback_data="publish_morning")],
+        [InlineKeyboardButton(text="🌤 Обід (квіз)", callback_data="publish_afternoon")],
+        [InlineKeyboardButton(text="🌙 Вечір (граматика)", callback_data="publish_evening")],
+        [InlineKeyboardButton(text="🚀 Все одразу", callback_data="admin_force_today")],
     ])
 
 
 @router.message(Command("publish"))
 @router.callback_query(F.data == "admin_publish_menu")
 async def cmd_publish_menu(event: types.Message | types.CallbackQuery):
-    """Меню ручної публікації: ранок / квіз / вечір окремо одне від одного."""
     user_id = event.from_user.id
     if not is_admin(user_id):
         return
@@ -398,15 +396,13 @@ async def cmd_publish_menu(event: types.Message | types.CallbackQuery):
 
     await msg.answer(
         f"📤 <b>Ручна публікація для Уроку №{current_day}</b>\n\n"
-        f"Оберіть, яку частину відправити в канал прямо зараз, "
-        f"незалежно від розкладу APScheduler:",
+        f"Оберіть, яку частину відправити в канал прямо зараз:",
         parse_mode="HTML",
         reply_markup=get_publish_keyboard()
     )
 
 
 async def _publish_part(callback: types.CallbackQuery, bot: Bot, job_func, label: str):
-    """Спільна логіка запуску однієї job-функції вручну з обробкою помилок."""
     if not is_admin(callback.from_user.id):
         await callback.answer()
         return
@@ -416,15 +412,13 @@ async def _publish_part(callback: types.CallbackQuery, bot: Bot, job_func, label
     async with AsyncSessionLocal() as session:
         current_day = await get_current_publishing_day(session)
 
-    status_msg = await callback.message.answer(
-        f"⏳ Публікація «{label}» (Урок №{current_day})..."
-    )
+    status_msg = await callback.message.answer(f"⏳ Публікація «{label}» (Урок №{current_day})...")
     try:
         await job_func(bot)
         await status_msg.edit_text(f"✅ «{label}» опубліковано (Урок №{current_day})!")
     except Exception as e:
-        logger.error(f"Помилка ручної публікації '{label}' для дня {current_day}: {e}")
-        await status_msg.edit_text(f"❌ Помилка публікації «{label}»: {e}")
+        logger.error(f"Помилка ручної публікації '{label}': {e}")
+        await status_msg.edit_text(f"❌ Помилка публікації: {e}")
 
 
 @router.callback_query(F.data == "publish_morning")
@@ -440,45 +434,3 @@ async def callback_publish_afternoon(callback: types.CallbackQuery, bot: Bot):
 @router.callback_query(F.data == "publish_evening")
 async def callback_publish_evening(callback: types.CallbackQuery, bot: Bot):
     await _publish_part(callback, bot, job_evening_text, "🌙 Вечірній текст (день буде +1)")
-
-
-# Текстові команди-дублікати кнопок — зручно для швидкого виклику без меню
-@router.message(Command("post_morning"))
-async def cmd_post_morning(message: types.Message, bot: Bot):
-    if not is_admin(message.from_user.id):
-        return
-    status_msg = await message.answer("⏳ Публікую ранкові слова...")
-    try:
-        await job_morning_words(bot)
-        await status_msg.edit_text("✅ Ранкові слова опубліковано!")
-    except Exception as e:
-        logger.error(f"Помилка /post_morning: {e}")
-        await status_msg.edit_text(f"❌ Помилка: {e}")
-
-
-@router.message(Command("post_afternoon"))
-async def cmd_post_afternoon(message: types.Message, bot: Bot):
-    if not is_admin(message.from_user.id):
-        return
-    status_msg = await message.answer("⏳ Публікую обідній квіз...")
-    try:
-        await job_afternoon_quiz(bot)
-        await status_msg.edit_text("✅ Обідній квіз опубліковано!")
-    except Exception as e:
-        logger.error(f"Помилка /post_afternoon: {e}")
-        await status_msg.edit_text(f"❌ Помилка: {e}")
-
-
-@router.message(Command("post_evening"))
-async def cmd_post_evening(message: types.Message, bot: Bot):
-    if not is_admin(message.from_user.id):
-        return
-    status_msg = await message.answer("⏳ Публікую вечірній текст...")
-    try:
-        await job_evening_text(bot)
-        await status_msg.edit_text("✅ Вечірній текст опубліковано! (лічильник дня автоматично +1)")
-    except Exception as e:
-        logger.error(f"Помилка /post_evening: {e}")
-        await status_msg.edit_text(f"❌ Помилка: {e}")
-=======
->>>>>>> ef3c3ad921dbc23b0803e3433be3742c5e1cd546
