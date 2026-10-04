@@ -1,0 +1,41 @@
+#version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: spanish_learning_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      TZ: Europe/Kyiv
+    volumes:
+      - prod_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: spanish_learning_app
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      TZ: Europe/Kyiv
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    command: python main.py
+
+volumes:
+  prod_mysql_data:
+    driver: local
