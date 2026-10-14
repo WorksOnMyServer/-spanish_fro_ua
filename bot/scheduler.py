@@ -1,6 +1,4 @@
 import os
-import re
-import html
 import logging
 from aiogram import Bot
 from aiogram.types import FSInputFile
@@ -12,8 +10,6 @@ from database.crud import (
     get_current_publishing_day,
     set_current_publishing_day,
     save_generated_lesson,
-    get_setting,
-    set_setting,
 )
 from generator.gemini_pipeline import generate_daily_lesson
 from generator.topics import DEFAULT_TOPICS
@@ -23,41 +19,6 @@ logger = logging.getLogger(__name__)
 CHANNEL_ID = os.getenv("CHANNEL_ID")
 ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip()]
 scheduler = AsyncIOScheduler(timezone="Europe/Kyiv")
-
-# Ліміти Telegram для send_poll
-POLL_QUESTION_LIMIT = 300
-POLL_OPTION_LIMIT = 100
-POLL_EXPLANATION_LIMIT = 200
-
-
-def _cut(text: str | None, limit: int) -> str:
-    """Обрізає текст до ліміту Telegram, додаючи «…»."""
-    text = (text or "").strip()
-    return text if len(text) <= limit else text[:limit - 1].rstrip() + "…"
-
-
-_HTML_TAG = re.compile(r"</?[a-zA-Z][^<>]*>")
-
-
-def safe_html(text: str | None) -> str:
-    """Текст від Gemini → безпечний для parse_mode=HTML.
-
-    Прибирає HTML-теги, які міг додати Gemini, і екранує <, >, & — інакше
-    Telegram відхиляє все повідомлення («can't parse entities»).
-    Розмітку <b>/<i> додає лише наш код навколо цього тексту.
-    """
-    return html.escape(_HTML_TAG.sub("", text or ""), quote=False)
-
-
-# Номер дня, ранковий пост якого вже вийшов. День «починається» з ранку:
-# квізи й вечір за розкладом не публікуються, поки не вийшов ранок цього дня.
-# Інакше після /force_today (день N → N+1) о 12:30 вийшли б квізи дня N+1 без його ранку.
-MORNING_DONE_KEY = "morning_published_day"
-
-
-async def _morning_done(session, day: int) -> bool:
-    val = await get_setting(session, MORNING_DONE_KEY)
-    return val is None or val == str(day)  # None — ще жодного ранку після оновлення бота
 
 
 # --- ☀️ 1. РАНОК (08:30): Словниковий запас ---
@@ -73,15 +34,13 @@ async def job_morning_words(bot: Bot):
             logger.warning(f"Урок або слова для дня {current_day} не знайдено у БД.")
             return
 
-        await set_setting(session, MORNING_DONE_KEY, str(current_day))
-
         message = f"☀️ <b>¡Buenos días! День {lesson.day_number}</b>\n"
-        message += f"📌 Тема: <b>{safe_html(lesson.topic.title_es)}</b> ({safe_html(lesson.topic.title_ua)})\n\n"
+        message += f"📌 Тема: <b>{lesson.topic.title_es}</b> ({lesson.topic.title_ua})\n\n"
         message += "<b>Лексика та фрази дня:</b>\n\n"
 
         for word in lesson.words:
-            message += f"🔹 <b>{safe_html(word.text_es)}</b> — {safe_html(word.text_ua)}\n"
-            message += f"   <i>Приклад: {safe_html(word.example_es)} ({safe_html(word.example_ua)})</i>\n\n"
+            message += f"🔹 <b>{word.text_es}</b> — {word.text_ua}\n"
+            message += f"   <i>Приклад: {word.example_es} ({word.example_ua})</i>\n\n"
 
         message += "🎧 <i>Слухайте вимову всіх слів та прикладів у закрипленому аудіо нижче 👇</i>"
 
@@ -92,18 +51,13 @@ async def job_morning_words(bot: Bot):
         )
 
         words_audio_path = lesson.words[0].audio_path
-        if _audio_ready(words_audio_path):
+        if words_audio_path and os.path.exists(words_audio_path):
             audio = FSInputFile(words_audio_path)
             await bot.send_audio(
                 chat_id=CHANNEL_ID,
                 audio=audio,
                 caption=f"🔊 <b>Аудіовимова (День {lesson.day_number})</b>",
                 parse_mode="HTML"
-            )
-        else:
-            await _notify_admins(
-                bot,
-                f"⚠️ <b>День {current_day}: аудіо слів відсутнє або порожнє</b> — слова опубліковано без озвучки."
             )
 
 
@@ -120,38 +74,18 @@ async def job_afternoon_quiz(bot: Bot):
             logger.warning(f"Квізи для дня {current_day} відсутні.")
             return
 
-        failed = []
-        for idx, quiz in enumerate(lesson.quizzes, 1):
+        for quiz in lesson.quizzes:
             q_ua = getattr(quiz, 'question_ua', None)
             poll_question = f"{quiz.question_es}\n({q_ua})" if q_ua else quiz.question_es
-            options = [_cut(str(opt), POLL_OPTION_LIMIT) for opt in (quiz.options_json or [])][:10]
 
-            if len(options) < 2 or not 0 <= quiz.correct_option_index < len(options):
-                logger.error(f"Квіз #{idx} дня {current_day} некоректний: {len(options)} варіантів, "
-                             f"правильний індекс {quiz.correct_option_index}")
-                failed.append(f"#{idx}: некоректні варіанти відповідей")
-                continue
-
-            # Помилка одного квізу не повинна зривати публікацію решти
-            try:
-                await bot.send_poll(
-                    chat_id=CHANNEL_ID,
-                    question=_cut(poll_question, POLL_QUESTION_LIMIT),
-                    options=options,
-                    type="quiz",
-                    correct_option_id=quiz.correct_option_index,
-                    explanation=_cut(quiz.explanation, POLL_EXPLANATION_LIMIT) or None,
-                    is_anonymous=True
-                )
-            except Exception as e:
-                logger.error(f"Не вдалося відправити квіз #{idx} дня {current_day}: {e}")
-                failed.append(f"#{idx}: {e}")
-
-        if failed:
-            await _notify_admins(
-                bot,
-                f"⚠️ <b>День {current_day}: не опубліковано {len(failed)} з {len(lesson.quizzes)} квізів</b>\n"
-                + "\n".join(html.escape(f) for f in failed)
+            await bot.send_poll(
+                chat_id=CHANNEL_ID,
+                question=poll_question[:300],
+                options=quiz.options_json,
+                type="quiz",
+                correct_option_id=quiz.correct_option_index,
+                explanation=quiz.explanation,
+                is_anonymous=True
             )
 
 
@@ -169,48 +103,22 @@ async def job_evening_text(bot: Bot):
             return
 
         message = f"🌙 <b>Вечірнє закріплення (День {lesson.day_number})</b>\n\n"
-        message += f"📖 <b>Мікро-граматика: {safe_html(lesson.grammar_rule_title)}</b>\n"
-        message += f"{safe_html(lesson.grammar_rule_text)}\n\n"
+        message += f"📖 <b>Мікро-граматика: {lesson.grammar_rule_title}</b>\n"
+        message += f"{lesson.grammar_rule_text}\n\n"
         message += "📝 <b>Короткий текст дня:</b>\n"
-        message += f"🇪🇸 {safe_html(lesson.evening_text_es)}\n\n"
-        message += f"🇺🇦 <i>{safe_html(lesson.evening_text_ua)}</i>"
+        message += f"🇪🇸 {lesson.evening_text_es}\n\n"
+        message += f"🇺🇦 <i>{lesson.evening_text_ua}</i>"
 
-        # Текст окремим повідомленням (ліміт 4096), а не підписом до аудіо (ліміт 1024).
-        # Помилка відправки не повинна блокувати зсув дня, інакше бот публікує той самий урок по колу.
-        try:
-            await bot.send_message(chat_id=CHANNEL_ID, text=message, parse_mode="HTML")
-        except Exception as e:
-            logger.error(f"Помилка вечірньої публікації дня {current_day}: {e}")
-            await _notify_admins(
-                bot,
-                f"⚠️ <b>Вечірній пост дня {current_day} не вийшов!</b>\n"
-                f"<code>{html.escape(str(e))}</code>\n\n"
-                f"День все одно переведено на {current_day + 1}. "
-                f"Щоб повторити: /set_day {current_day} → /publish → 🌙 Вечір"
+        if lesson.evening_audio_path and os.path.exists(lesson.evening_audio_path):
+            audio = FSInputFile(lesson.evening_audio_path)
+            await bot.send_audio(
+                chat_id=CHANNEL_ID,
+                audio=audio,
+                caption=message,
+                parse_mode="HTML"
             )
         else:
-            # Текст уже в каналі, тож повтор через /publish лише продублював би його — радимо не повторювати.
-            audio_error = None
-            if _audio_ready(lesson.evening_audio_path):
-                try:
-                    await bot.send_audio(
-                        chat_id=CHANNEL_ID,
-                        audio=FSInputFile(lesson.evening_audio_path),
-                        caption=f"🎧 <b>Озвучення тексту (День {lesson.day_number})</b>",
-                        parse_mode="HTML"
-                    )
-                except Exception as e:
-                    audio_error = str(e)
-            else:
-                audio_error = "файл аудіо відсутній або порожній (edge-tts не згенерував звук)"
-            if audio_error:
-                logger.error(f"Вечірнє аудіо дня {current_day} не відправлено: {audio_error}")
-                await _notify_admins(
-                    bot,
-                    f"⚠️ <b>День {current_day}: вечірній текст опубліковано, але без аудіо</b>\n"
-                    f"<code>{html.escape(audio_error)}</code>\n\n"
-                    f"Повторювати /publish не треба — це продублює текст."
-                )
+            await bot.send_message(chat_id=CHANNEL_ID, text=message, parse_mode="HTML")
 
         next_day = current_day + 1
         await set_current_publishing_day(session, next_day)
@@ -236,17 +144,13 @@ async def ensure_next_day_lesson(session, day_number: int, bot: Bot):
         logger.info(f"✅ Урок №{day_number} автоматично згенеровано.")
     except Exception as e:
         logger.error(f"❌ Помилка автогенерації уроку №{day_number}: {e}")
-        await _notify_admins(
-            bot,
-            f"⚠️ <b>Автогенерація уроку №{day_number} не вдалася!</b>\n<code>{html.escape(str(e))}</code>"
-        )
+        await _notify_admins_generation_failed(bot, day_number, e)
 
 
-def _audio_ready(path) -> bool:
-    return bool(path) and os.path.exists(path) and os.path.getsize(path) > 0
-
-
-async def _notify_admins(bot: Bot, text: str):
+async def _notify_admins_generation_failed(bot: Bot, day_number: int, error: Exception):
+    if not ADMIN_IDS:
+        return
+    text = f"⚠️ <b>Автогенерація уроку №{day_number} не вдалася!</b>\n<code>{error}</code>"
     for admin_id in ADMIN_IDS:
         try:
             await bot.send_message(chat_id=admin_id, text=text, parse_mode="HTML")
@@ -254,36 +158,12 @@ async def _notify_admins(bot: Bot, text: str):
             pass
 
 
-# --- Запуск за розкладом: квізи й вечір лише після ранку цього дня ---
-# Ручні публікації (/publish, /force_today) викликають job_* напряму, без цієї перевірки.
-
-async def _scheduled_after_morning(bot: Bot, job, label: str):
-    async with AsyncSessionLocal() as session:
-        current_day = await get_current_publishing_day(session)
-        if not await _morning_done(session, current_day):
-            logger.info(f"{label} дня {current_day} пропущено: ранок цього дня ще не публікувався "
-                        f"(день почнеться завтра о 08:30).")
-            return
-    await job(bot)
-
-
-async def scheduled_afternoon_quiz(bot: Bot):
-    await _scheduled_after_morning(bot, job_afternoon_quiz, "Обідній квіз")
-
-
-async def scheduled_evening_text(bot: Bot):
-    await _scheduled_after_morning(bot, job_evening_text, "Вечірній пост")
-
-
 def start_scheduler(bot: Bot):
     """Запускає планувальник задач без дублювання."""
-    # misfire_grace_time: якщо бот був зайнятий/перезапускався, задача виконається із запізненням
-    # до 10 хв, а не буде пропущена. coalesce: кілька пропущених запусків → один.
-    job_opts = dict(misfire_grace_time=600, coalesce=True)
-    scheduler.add_job(job_morning_words, 'cron', hour=8, minute=30, args=[bot], **job_opts)
-    scheduler.add_job(scheduled_afternoon_quiz, 'cron', hour=12, minute=30, args=[bot], **job_opts)
-    scheduler.add_job(scheduled_evening_text, 'cron', hour=18, minute=30, args=[bot], **job_opts)
-
+    scheduler.add_job(job_morning_words, 'cron', hour=8, minute=30, args=[bot])
+    scheduler.add_job(job_afternoon_quiz, 'cron', hour=12, minute=30, args=[bot])
+    scheduler.add_job(job_evening_text, 'cron', hour=18, minute=30, args=[bot])
+    
     scheduler.start()
     logger.info("APScheduler успішно запущено (Часовий пояс: Europe/Kyiv)!")
 

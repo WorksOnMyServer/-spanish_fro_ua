@@ -14,19 +14,17 @@ from database.crud import (
 )
 from generator.gemini_pipeline import generate_daily_lesson
 from generator.topics import DEFAULT_TOPICS
-from bot.scheduler import job_morning_words, job_afternoon_quiz, job_evening_text, safe_html
+from bot.scheduler import job_morning_words, job_afternoon_quiz, job_evening_text
 
 router = Router()
 logger = logging.getLogger(__name__)
 
 # ID адмінів з .env
 ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip()]
-if not ADMIN_IDS:
-    logger.warning("ADMIN_IDS порожній — адмін-команди бота недоступні нікому!")
 
 def is_admin(user_id: int) -> bool:
-    """Перевірка чи користувач є адміном. Порожній ADMIN_IDS = адмінів немає."""
-    return user_id in ADMIN_IDS
+    """Перевірка чи користувач є адміном."""
+    return not ADMIN_IDS or user_id in ADMIN_IDS
 
 
 def get_admin_reply_keyboard() -> ReplyKeyboardMarkup:
@@ -185,7 +183,7 @@ async def cmd_generate(event: types.Message | types.CallbackQuery, bot: Bot = No
             await save_generated_lesson(session, lesson_data)
 
         await status_msg.edit_text(
-            f"✅ <b>Урок №{next_day} ({safe_html(topic_ua)}) [Рівень {custom_level}] успішно згенеровано!</b>\n"
+            f"✅ <b>Урок №{next_day} ({topic_ua}) [Рівень {custom_level}] успішно згенеровано!</b>\n"
             f"Введіть /show для перегляду та підтвердження.", 
             parse_mode="HTML"
         )
@@ -200,11 +198,7 @@ async def cmd_generate(event: types.Message | types.CallbackQuery, bot: Bot = No
 async def cmd_force_today(message: types.Message, bot: Bot):
     if not is_admin(message.from_user.id):
         return
-    await _force_today(message, bot)
 
-
-async def _force_today(message: types.Message, bot: Bot):
-    """Публікує всі пости дня. Права адміна вже перевірені викликачем."""
     async with AsyncSessionLocal() as session:
         current_day = await get_current_publishing_day(session)
 
@@ -220,12 +214,7 @@ async def _force_today(message: types.Message, bot: Bot):
         await status_msg.edit_text(f"⏳ [3/3] Публікація вечірнього тексту (День {current_day})...")
         await job_evening_text(bot)
 
-        await status_msg.edit_text(
-            f"✅ <b>Усі публікації для Уроку №{current_day} успішно відправлено в канал!</b>\n\n"
-            f"Тепер поточний — Урок №{current_day + 1}. Сьогоднішні квізи й вечір за розкладом "
-            f"буде пропущено, урок №{current_day + 1} почнеться завтра о 08:30.",
-            parse_mode="HTML"
-        )
+        await status_msg.edit_text(f"✅ <b>Усі публікації для Уроку №{current_day} успішно відправлено в канал!</b>", parse_mode="HTML")
     except Exception as e:
         logger.error(f"Помилка при ручній публікації дня {current_day}: {e}")
         await status_msg.edit_text(f"❌ Помилка під час відправки: {e}")
@@ -233,12 +222,8 @@ async def _force_today(message: types.Message, bot: Bot):
 
 @router.callback_query(F.data == "admin_force_today")
 async def callback_force_today(callback: types.CallbackQuery, bot: Bot):
-    # Перевіряємо того, хто натиснув кнопку. callback.message.from_user — це сам бот.
-    if not is_admin(callback.from_user.id):
-        await callback.answer()
-        return
     await callback.answer("Запускаємо постинг...")
-    await _force_today(callback.message, bot)
+    await cmd_force_today(callback.message, bot)
 
 
 # --- 5. /show — Перегляд контенту та модерація ---
@@ -265,22 +250,22 @@ async def cmd_show(event: types.Message | types.CallbackQuery):
             return
 
     text = f"🔍 <b>Запланований контент на наступну публікацію (Урок №{lesson.day_number}):</b>\n\n"
-    text += f"📌 <b>Тема:</b> {safe_html(lesson.topic.title_es)} ({safe_html(lesson.topic.title_ua)})\n\n"
+    text += f"📌 <b>Тема:</b> {lesson.topic.title_es} ({lesson.topic.title_ua})\n\n"
     text += f"☀️ <b>Слів у блоці:</b> {len(lesson.words)}\n"
     for w in lesson.words:
-        text += f"  • {safe_html(w.text_es)} — {safe_html(w.text_ua)}\n"
+        text += f"  • {w.text_es} — {w.text_ua}\n"
 
     if lesson.quizzes:
         q = lesson.quizzes[0]
         q_ua = getattr(q, 'question_ua', None)
-        text += f"\n🌤 <b>Питання квізу:</b> {safe_html(q.question_es)}\n"
+        text += f"\n🌤 <b>Питання квізу:</b> {q.question_es}\n"
         if q_ua:
-            text += f"<i>({safe_html(q_ua)})</i>\n"
+            text += f"<i>({q_ua})</i>\n"
     else:
         text += f"\n🌤 <b>Питання квізу:</b> Немає\n"
 
-    text += f"\n🌙 <b>Граматика:</b> {safe_html(lesson.grammar_rule_title)}\n"
-    text += f"<i>{safe_html(lesson.evening_text_es)}</i>"
+    text += f"\n🌙 <b>Граматика:</b> {lesson.grammar_rule_title}\n"
+    text += f"<i>{lesson.evening_text_es}</i>"
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [
@@ -317,22 +302,13 @@ async def cmd_set_day(message: types.Message):
 
         await set_current_publishing_day(session, new_day)
 
-    await message.answer(
-        f"🎯 <b>Поточний день публікацій успішно змінено на №{new_day}!</b>\n\n"
-        f"За розкладом урок почнеться з ранкового поста (08:30). Якщо ранок уроку №{new_day} "
-        f"ще не виходив, квізи й вечір за розкладом до того пропускаються. "
-        f"Опублікувати частини вручну: /publish",
-        parse_mode="HTML"
-    )
+    await message.answer(f"🎯 <b>Поточний день публікацій успішно змінено на №{new_day}!</b>", parse_mode="HTML")
 
 
 # --- 7. Обробка кнопок підтвердження та перегенерації ---
 
 @router.callback_query(F.data.startswith("confirm_day_"))
 async def process_confirm(callback: types.CallbackQuery):
-    if not is_admin(callback.from_user.id):
-        await callback.answer()
-        return
     await callback.answer("Підтверджено!")
     await callback.message.edit_reply_markup(reply_markup=None)
     await callback.message.answer(
@@ -343,9 +319,6 @@ async def process_confirm(callback: types.CallbackQuery):
 
 @router.callback_query(F.data.startswith("regenerate_day_"))
 async def process_regenerate(callback: types.CallbackQuery):
-    if not is_admin(callback.from_user.id):
-        await callback.answer()
-        return
     await callback.answer("Перезапуск генерації...")
     
     day_num = int(callback.data.split("_")[-1])
