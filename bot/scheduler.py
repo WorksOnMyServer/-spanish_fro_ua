@@ -92,13 +92,18 @@ async def job_morning_words(bot: Bot):
         )
 
         words_audio_path = lesson.words[0].audio_path
-        if words_audio_path and os.path.exists(words_audio_path):
+        if _audio_ready(words_audio_path):
             audio = FSInputFile(words_audio_path)
             await bot.send_audio(
                 chat_id=CHANNEL_ID,
                 audio=audio,
                 caption=f"🔊 <b>Аудіовимова (День {lesson.day_number})</b>",
                 parse_mode="HTML"
+            )
+        else:
+            await _notify_admins(
+                bot,
+                f"⚠️ <b>День {current_day}: аудіо слів відсутнє або порожнє</b> — слова опубліковано без озвучки."
             )
 
 
@@ -174,24 +179,38 @@ async def job_evening_text(bot: Bot):
         # Помилка відправки не повинна блокувати зсув дня, інакше бот публікує той самий урок по колу.
         try:
             await bot.send_message(chat_id=CHANNEL_ID, text=message, parse_mode="HTML")
-
-            if lesson.evening_audio_path and os.path.exists(lesson.evening_audio_path):
-                audio = FSInputFile(lesson.evening_audio_path)
-                await bot.send_audio(
-                    chat_id=CHANNEL_ID,
-                    audio=audio,
-                    caption=f"🎧 <b>Озвучення тексту (День {lesson.day_number})</b>",
-                    parse_mode="HTML"
-                )
         except Exception as e:
             logger.error(f"Помилка вечірньої публікації дня {current_day}: {e}")
             await _notify_admins(
                 bot,
-                f"⚠️ <b>Вечірній пост дня {current_day} не вийшов повністю!</b>\n"
+                f"⚠️ <b>Вечірній пост дня {current_day} не вийшов!</b>\n"
                 f"<code>{html.escape(str(e))}</code>\n\n"
                 f"День все одно переведено на {current_day + 1}. "
                 f"Щоб повторити: /set_day {current_day} → /publish → 🌙 Вечір"
             )
+        else:
+            # Текст уже в каналі, тож повтор через /publish лише продублював би його — радимо не повторювати.
+            audio_error = None
+            if _audio_ready(lesson.evening_audio_path):
+                try:
+                    await bot.send_audio(
+                        chat_id=CHANNEL_ID,
+                        audio=FSInputFile(lesson.evening_audio_path),
+                        caption=f"🎧 <b>Озвучення тексту (День {lesson.day_number})</b>",
+                        parse_mode="HTML"
+                    )
+                except Exception as e:
+                    audio_error = str(e)
+            else:
+                audio_error = "файл аудіо відсутній або порожній (edge-tts не згенерував звук)"
+            if audio_error:
+                logger.error(f"Вечірнє аудіо дня {current_day} не відправлено: {audio_error}")
+                await _notify_admins(
+                    bot,
+                    f"⚠️ <b>День {current_day}: вечірній текст опубліковано, але без аудіо</b>\n"
+                    f"<code>{html.escape(audio_error)}</code>\n\n"
+                    f"Повторювати /publish не треба — це продублює текст."
+                )
 
         next_day = current_day + 1
         await set_current_publishing_day(session, next_day)
@@ -221,6 +240,10 @@ async def ensure_next_day_lesson(session, day_number: int, bot: Bot):
             bot,
             f"⚠️ <b>Автогенерація уроку №{day_number} не вдалася!</b>\n<code>{html.escape(str(e))}</code>"
         )
+
+
+def _audio_ready(path) -> bool:
+    return bool(path) and os.path.exists(path) and os.path.getsize(path) > 0
 
 
 async def _notify_admins(bot: Bot, text: str):

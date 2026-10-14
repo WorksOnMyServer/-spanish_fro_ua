@@ -66,6 +66,24 @@ def clean_text_for_tts(text: str) -> str:
     return cleaned
 
 
+async def save_tts(text: str, voice: str, path: str, attempts: int = 3) -> bool:
+    """Озвучує текст у файл з повторами. edge-tts при збої лишає порожній файл,
+    а Telegram такий відхиляє ("file must be non-empty") — тому перевіряємо розмір і прибираємо брак."""
+    for attempt in range(1, attempts + 1):
+        try:
+            await edge_tts.Communicate(text, voice).save(path)
+            if os.path.getsize(path) > 0:
+                return True
+            logger.warning(f"edge-tts повернув порожній файл {path} (спроба {attempt})")
+        except Exception as e:
+            logger.warning(f"Помилка edge-tts для {path} (спроба {attempt}): {e}")
+        if attempt < attempts:
+            await asyncio.sleep(2 * attempt)
+    if os.path.exists(path):
+        os.remove(path)
+    return False
+
+
 async def generate_audio_file(text_es: str, text_ua: str, output_path: str):
     """
     Генерує єдиний MP3-файл, де послідовно озвучується як іспанський текст (голосовим движком es-ES),
@@ -161,12 +179,10 @@ async def generate_daily_lesson(topic_ua: str, topic_es: str, level: str = "A1",
             if not text:
                 continue
             part_path = f"{audio_dir}/temp_w_{idx}_{p_idx}.mp3"
-            try:
-                comm = edge_tts.Communicate(text, voice)
-                await comm.save(part_path)
+            if await save_tts(text, voice, part_path):
                 temp_files.append(part_path)
-            except Exception as e:
-                logger.error(f"Помилка генерації частини аудіо: {e}")
+            else:
+                logger.error(f"Не вдалося озвучити частину аудіо: {part_path}")
     # Об'єднуємо всі частини в один фінальний words_block.mp3
     words_audio_path = f"{audio_dir}/words_block.mp3"
     with open(words_audio_path, 'wb') as outfile:
@@ -191,14 +207,11 @@ async def generate_daily_lesson(topic_ua: str, topic_es: str, level: str = "A1",
 
 # Генерація аудіо для вечірнього тексту (ТІЛЬКИ іспанська мова)
     evening_audio_path = f"{audio_dir}/evening_text.mp3"
-    try:
-        os.makedirs(audio_dir, exist_ok=True)
-        clean_evening_es = clean_text_for_tts(lesson_data["evening_text"]["text_es"])
-        comm_es = edge_tts.Communicate(clean_evening_es, "es-ES-AlvaroNeural")
-        await comm_es.save(evening_audio_path)
+    clean_evening_es = clean_text_for_tts(lesson_data["evening_text"]["text_es"])
+    if await save_tts(clean_evening_es, "es-ES-AlvaroNeural", evening_audio_path):
         logger.info(f"Вечірнє аудіо (тільки es) згенеровано: {evening_audio_path}")
-    except Exception as e:
-        logger.error(f"Помилка генерації вечірнього аудіо: {e}")
+    else:
+        logger.error(f"Не вдалося згенерувати вечірнє аудіо: {evening_audio_path}")
 
     lesson_data["evening_text"]["audio_path"] = evening_audio_path
 
