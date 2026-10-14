@@ -21,10 +21,12 @@ logger = logging.getLogger(__name__)
 
 # ID адмінів з .env
 ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip()]
+if not ADMIN_IDS:
+    logger.warning("ADMIN_IDS порожній — адмін-команди бота недоступні нікому!")
 
 def is_admin(user_id: int) -> bool:
-    """Перевірка чи користувач є адміном."""
-    return not ADMIN_IDS or user_id in ADMIN_IDS
+    """Перевірка чи користувач є адміном. Порожній ADMIN_IDS = адмінів немає."""
+    return user_id in ADMIN_IDS
 
 
 def get_admin_reply_keyboard() -> ReplyKeyboardMarkup:
@@ -198,7 +200,11 @@ async def cmd_generate(event: types.Message | types.CallbackQuery, bot: Bot = No
 async def cmd_force_today(message: types.Message, bot: Bot):
     if not is_admin(message.from_user.id):
         return
+    await _force_today(message, bot)
 
+
+async def _force_today(message: types.Message, bot: Bot):
+    """Публікує всі пости дня. Права адміна вже перевірені викликачем."""
     async with AsyncSessionLocal() as session:
         current_day = await get_current_publishing_day(session)
 
@@ -222,8 +228,12 @@ async def cmd_force_today(message: types.Message, bot: Bot):
 
 @router.callback_query(F.data == "admin_force_today")
 async def callback_force_today(callback: types.CallbackQuery, bot: Bot):
+    # Перевіряємо того, хто натиснув кнопку. callback.message.from_user — це сам бот.
+    if not is_admin(callback.from_user.id):
+        await callback.answer()
+        return
     await callback.answer("Запускаємо постинг...")
-    await cmd_force_today(callback.message, bot)
+    await _force_today(callback.message, bot)
 
 
 # --- 5. /show — Перегляд контенту та модерація ---
@@ -309,6 +319,9 @@ async def cmd_set_day(message: types.Message):
 
 @router.callback_query(F.data.startswith("confirm_day_"))
 async def process_confirm(callback: types.CallbackQuery):
+    if not is_admin(callback.from_user.id):
+        await callback.answer()
+        return
     await callback.answer("Підтверджено!")
     await callback.message.edit_reply_markup(reply_markup=None)
     await callback.message.answer(
@@ -319,6 +332,9 @@ async def process_confirm(callback: types.CallbackQuery):
 
 @router.callback_query(F.data.startswith("regenerate_day_"))
 async def process_regenerate(callback: types.CallbackQuery):
+    if not is_admin(callback.from_user.id):
+        await callback.answer()
+        return
     await callback.answer("Перезапуск генерації...")
     
     day_num = int(callback.data.split("_")[-1])
