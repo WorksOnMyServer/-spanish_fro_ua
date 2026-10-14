@@ -40,9 +40,9 @@ class EveningTextSchema(BaseModel):
 class QuizSchema(BaseModel):
     question_es: str = Field(description="Питання іспанською мовою")
     question_ua: str = Field(description="Переклад питання українською мовою")
-    options: list[str] = Field(description="4 варіанти відповідей")
+    options: list[str] = Field(description="4 варіанти відповідей, кожен до 80 символів")
     correct_index: int = Field(description="Індекс правильної відповіді (0, 1, 2 або 3)")
-    explanation: str = Field(description="Пояснення відповіді українською")
+    explanation: str = Field(description="Коротке пояснення відповіді українською, до 180 символів")
 
 
 class LessonGeneratedData(BaseModel):
@@ -115,9 +115,11 @@ async def generate_daily_lesson(topic_ua: str, topic_es: str, level: str = "A1",
     - Дай 1 мікро-правило граматики.
     - Напиши вечірній зв'язний текст (3-5 речень) із перекладом.
     - Створи 3 складних квізи з варіантами відповідей.
+    - У квізах: кожен варіант відповіді до 80 символів, пояснення до 180 символів.
     """
 
-    response = client.models.generate_content(
+    # Асинхронний виклик: синхронний блокував би весь бот (команди й планувальник) на час відповіді
+    response = await client.aio.models.generate_content(
         model='gemini-2.5-flash',
         contents=prompt,
         config=types.GenerateContentConfig(

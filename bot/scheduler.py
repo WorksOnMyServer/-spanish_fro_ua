@@ -1,4 +1,5 @@
 import os
+import html
 import logging
 from aiogram import Bot
 from aiogram.types import FSInputFile
@@ -19,6 +20,17 @@ logger = logging.getLogger(__name__)
 CHANNEL_ID = os.getenv("CHANNEL_ID")
 ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip()]
 scheduler = AsyncIOScheduler(timezone="Europe/Kyiv")
+
+# Ліміти Telegram для send_poll
+POLL_QUESTION_LIMIT = 300
+POLL_OPTION_LIMIT = 100
+POLL_EXPLANATION_LIMIT = 200
+
+
+def _cut(text: str | None, limit: int) -> str:
+    """Обрізає текст до ліміту Telegram, додаючи «…»."""
+    text = (text or "").strip()
+    return text if len(text) <= limit else text[:limit - 1].rstrip() + "…"
 
 
 # --- ☀️ 1. РАНОК (08:30): Словниковий запас ---
@@ -74,18 +86,38 @@ async def job_afternoon_quiz(bot: Bot):
             logger.warning(f"Квізи для дня {current_day} відсутні.")
             return
 
-        for quiz in lesson.quizzes:
+        failed = []
+        for idx, quiz in enumerate(lesson.quizzes, 1):
             q_ua = getattr(quiz, 'question_ua', None)
             poll_question = f"{quiz.question_es}\n({q_ua})" if q_ua else quiz.question_es
+            options = [_cut(str(opt), POLL_OPTION_LIMIT) for opt in (quiz.options_json or [])][:10]
 
-            await bot.send_poll(
-                chat_id=CHANNEL_ID,
-                question=poll_question[:300],
-                options=quiz.options_json,
-                type="quiz",
-                correct_option_id=quiz.correct_option_index,
-                explanation=quiz.explanation,
-                is_anonymous=True
+            if len(options) < 2 or not 0 <= quiz.correct_option_index < len(options):
+                logger.error(f"Квіз #{idx} дня {current_day} некоректний: {len(options)} варіантів, "
+                             f"правильний індекс {quiz.correct_option_index}")
+                failed.append(f"#{idx}: некоректні варіанти відповідей")
+                continue
+
+            # Помилка одного квізу не повинна зривати публікацію решти
+            try:
+                await bot.send_poll(
+                    chat_id=CHANNEL_ID,
+                    question=_cut(poll_question, POLL_QUESTION_LIMIT),
+                    options=options,
+                    type="quiz",
+                    correct_option_id=quiz.correct_option_index,
+                    explanation=_cut(quiz.explanation, POLL_EXPLANATION_LIMIT) or None,
+                    is_anonymous=True
+                )
+            except Exception as e:
+                logger.error(f"Не вдалося відправити квіз #{idx} дня {current_day}: {e}")
+                failed.append(f"#{idx}: {e}")
+
+        if failed:
+            await _notify_admins(
+                bot,
+                f"⚠️ <b>День {current_day}: не опубліковано {len(failed)} з {len(lesson.quizzes)} квізів</b>\n"
+                + "\n".join(html.escape(f) for f in failed)
             )
 
 
@@ -109,16 +141,28 @@ async def job_evening_text(bot: Bot):
         message += f"🇪🇸 {lesson.evening_text_es}\n\n"
         message += f"🇺🇦 <i>{lesson.evening_text_ua}</i>"
 
-        if lesson.evening_audio_path and os.path.exists(lesson.evening_audio_path):
-            audio = FSInputFile(lesson.evening_audio_path)
-            await bot.send_audio(
-                chat_id=CHANNEL_ID,
-                audio=audio,
-                caption=message,
-                parse_mode="HTML"
-            )
-        else:
+        # Текст окремим повідомленням (ліміт 4096), а не підписом до аудіо (ліміт 1024).
+        # Помилка відправки не повинна блокувати зсув дня, інакше бот публікує той самий урок по колу.
+        try:
             await bot.send_message(chat_id=CHANNEL_ID, text=message, parse_mode="HTML")
+
+            if lesson.evening_audio_path and os.path.exists(lesson.evening_audio_path):
+                audio = FSInputFile(lesson.evening_audio_path)
+                await bot.send_audio(
+                    chat_id=CHANNEL_ID,
+                    audio=audio,
+                    caption=f"🎧 <b>Озвучення тексту (День {lesson.day_number})</b>",
+                    parse_mode="HTML"
+                )
+        except Exception as e:
+            logger.error(f"Помилка вечірньої публікації дня {current_day}: {e}")
+            await _notify_admins(
+                bot,
+                f"⚠️ <b>Вечірній пост дня {current_day} не вийшов повністю!</b>\n"
+                f"<code>{html.escape(str(e))}</code>\n\n"
+                f"День все одно переведено на {current_day + 1}. "
+                f"Щоб повторити: /set_day {current_day} → /publish → 🌙 Вечір"
+            )
 
         next_day = current_day + 1
         await set_current_publishing_day(session, next_day)
@@ -144,13 +188,13 @@ async def ensure_next_day_lesson(session, day_number: int, bot: Bot):
         logger.info(f"✅ Урок №{day_number} автоматично згенеровано.")
     except Exception as e:
         logger.error(f"❌ Помилка автогенерації уроку №{day_number}: {e}")
-        await _notify_admins_generation_failed(bot, day_number, e)
+        await _notify_admins(
+            bot,
+            f"⚠️ <b>Автогенерація уроку №{day_number} не вдалася!</b>\n<code>{html.escape(str(e))}</code>"
+        )
 
 
-async def _notify_admins_generation_failed(bot: Bot, day_number: int, error: Exception):
-    if not ADMIN_IDS:
-        return
-    text = f"⚠️ <b>Автогенерація уроку №{day_number} не вдалася!</b>\n<code>{error}</code>"
+async def _notify_admins(bot: Bot, text: str):
     for admin_id in ADMIN_IDS:
         try:
             await bot.send_message(chat_id=admin_id, text=text, parse_mode="HTML")
@@ -160,10 +204,13 @@ async def _notify_admins_generation_failed(bot: Bot, day_number: int, error: Exc
 
 def start_scheduler(bot: Bot):
     """Запускає планувальник задач без дублювання."""
-    scheduler.add_job(job_morning_words, 'cron', hour=8, minute=30, args=[bot])
-    scheduler.add_job(job_afternoon_quiz, 'cron', hour=12, minute=30, args=[bot])
-    scheduler.add_job(job_evening_text, 'cron', hour=18, minute=30, args=[bot])
-    
+    # misfire_grace_time: якщо бот був зайнятий/перезапускався, задача виконається із запізненням
+    # до 10 хв, а не буде пропущена. coalesce: кілька пропущених запусків → один.
+    job_opts = dict(misfire_grace_time=600, coalesce=True)
+    scheduler.add_job(job_morning_words, 'cron', hour=8, minute=30, args=[bot], **job_opts)
+    scheduler.add_job(job_afternoon_quiz, 'cron', hour=12, minute=30, args=[bot], **job_opts)
+    scheduler.add_job(job_evening_text, 'cron', hour=18, minute=30, args=[bot], **job_opts)
+
     scheduler.start()
     logger.info("APScheduler успішно запущено (Часовий пояс: Europe/Kyiv)!")
 
