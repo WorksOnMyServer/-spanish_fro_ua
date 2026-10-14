@@ -1,4 +1,5 @@
 import os
+import re
 import html
 import logging
 from aiogram import Bot
@@ -11,6 +12,8 @@ from database.crud import (
     get_current_publishing_day,
     set_current_publishing_day,
     save_generated_lesson,
+    get_setting,
+    set_setting,
 )
 from generator.gemini_pipeline import generate_daily_lesson
 from generator.topics import DEFAULT_TOPICS
@@ -33,6 +36,30 @@ def _cut(text: str | None, limit: int) -> str:
     return text if len(text) <= limit else text[:limit - 1].rstrip() + "…"
 
 
+_HTML_TAG = re.compile(r"</?[a-zA-Z][^<>]*>")
+
+
+def safe_html(text: str | None) -> str:
+    """Текст від Gemini → безпечний для parse_mode=HTML.
+
+    Прибирає HTML-теги, які міг додати Gemini, і екранує <, >, & — інакше
+    Telegram відхиляє все повідомлення («can't parse entities»).
+    Розмітку <b>/<i> додає лише наш код навколо цього тексту.
+    """
+    return html.escape(_HTML_TAG.sub("", text or ""), quote=False)
+
+
+# Номер дня, ранковий пост якого вже вийшов. День «починається» з ранку:
+# квізи й вечір за розкладом не публікуються, поки не вийшов ранок цього дня.
+# Інакше після /force_today (день N → N+1) о 12:30 вийшли б квізи дня N+1 без його ранку.
+MORNING_DONE_KEY = "morning_published_day"
+
+
+async def _morning_done(session, day: int) -> bool:
+    val = await get_setting(session, MORNING_DONE_KEY)
+    return val is None or val == str(day)  # None — ще жодного ранку після оновлення бота
+
+
 # --- ☀️ 1. РАНОК (08:30): Словниковий запас ---
 
 async def job_morning_words(bot: Bot):
@@ -46,13 +73,15 @@ async def job_morning_words(bot: Bot):
             logger.warning(f"Урок або слова для дня {current_day} не знайдено у БД.")
             return
 
+        await set_setting(session, MORNING_DONE_KEY, str(current_day))
+
         message = f"☀️ <b>¡Buenos días! День {lesson.day_number}</b>\n"
-        message += f"📌 Тема: <b>{lesson.topic.title_es}</b> ({lesson.topic.title_ua})\n\n"
+        message += f"📌 Тема: <b>{safe_html(lesson.topic.title_es)}</b> ({safe_html(lesson.topic.title_ua)})\n\n"
         message += "<b>Лексика та фрази дня:</b>\n\n"
 
         for word in lesson.words:
-            message += f"🔹 <b>{word.text_es}</b> — {word.text_ua}\n"
-            message += f"   <i>Приклад: {word.example_es} ({word.example_ua})</i>\n\n"
+            message += f"🔹 <b>{safe_html(word.text_es)}</b> — {safe_html(word.text_ua)}\n"
+            message += f"   <i>Приклад: {safe_html(word.example_es)} ({safe_html(word.example_ua)})</i>\n\n"
 
         message += "🎧 <i>Слухайте вимову всіх слів та прикладів у закрипленому аудіо нижче 👇</i>"
 
@@ -135,11 +164,11 @@ async def job_evening_text(bot: Bot):
             return
 
         message = f"🌙 <b>Вечірнє закріплення (День {lesson.day_number})</b>\n\n"
-        message += f"📖 <b>Мікро-граматика: {lesson.grammar_rule_title}</b>\n"
-        message += f"{lesson.grammar_rule_text}\n\n"
+        message += f"📖 <b>Мікро-граматика: {safe_html(lesson.grammar_rule_title)}</b>\n"
+        message += f"{safe_html(lesson.grammar_rule_text)}\n\n"
         message += "📝 <b>Короткий текст дня:</b>\n"
-        message += f"🇪🇸 {lesson.evening_text_es}\n\n"
-        message += f"🇺🇦 <i>{lesson.evening_text_ua}</i>"
+        message += f"🇪🇸 {safe_html(lesson.evening_text_es)}\n\n"
+        message += f"🇺🇦 <i>{safe_html(lesson.evening_text_ua)}</i>"
 
         # Текст окремим повідомленням (ліміт 4096), а не підписом до аудіо (ліміт 1024).
         # Помилка відправки не повинна блокувати зсув дня, інакше бот публікує той самий урок по колу.
@@ -202,14 +231,35 @@ async def _notify_admins(bot: Bot, text: str):
             pass
 
 
+# --- Запуск за розкладом: квізи й вечір лише після ранку цього дня ---
+# Ручні публікації (/publish, /force_today) викликають job_* напряму, без цієї перевірки.
+
+async def _scheduled_after_morning(bot: Bot, job, label: str):
+    async with AsyncSessionLocal() as session:
+        current_day = await get_current_publishing_day(session)
+        if not await _morning_done(session, current_day):
+            logger.info(f"{label} дня {current_day} пропущено: ранок цього дня ще не публікувався "
+                        f"(день почнеться завтра о 08:30).")
+            return
+    await job(bot)
+
+
+async def scheduled_afternoon_quiz(bot: Bot):
+    await _scheduled_after_morning(bot, job_afternoon_quiz, "Обідній квіз")
+
+
+async def scheduled_evening_text(bot: Bot):
+    await _scheduled_after_morning(bot, job_evening_text, "Вечірній пост")
+
+
 def start_scheduler(bot: Bot):
     """Запускає планувальник задач без дублювання."""
     # misfire_grace_time: якщо бот був зайнятий/перезапускався, задача виконається із запізненням
     # до 10 хв, а не буде пропущена. coalesce: кілька пропущених запусків → один.
     job_opts = dict(misfire_grace_time=600, coalesce=True)
     scheduler.add_job(job_morning_words, 'cron', hour=8, minute=30, args=[bot], **job_opts)
-    scheduler.add_job(job_afternoon_quiz, 'cron', hour=12, minute=30, args=[bot], **job_opts)
-    scheduler.add_job(job_evening_text, 'cron', hour=18, minute=30, args=[bot], **job_opts)
+    scheduler.add_job(scheduled_afternoon_quiz, 'cron', hour=12, minute=30, args=[bot], **job_opts)
+    scheduler.add_job(scheduled_evening_text, 'cron', hour=18, minute=30, args=[bot], **job_opts)
 
     scheduler.start()
     logger.info("APScheduler успішно запущено (Часовий пояс: Europe/Kyiv)!")

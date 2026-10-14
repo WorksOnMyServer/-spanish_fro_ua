@@ -21,29 +21,34 @@ async def get_max_day_number(session) -> int:
     return max_day if max_day is not None else 0
 
 
+async def get_setting(session, key: str) -> str | None:
+    """Отримує значення налаштування з таблиці system_settings (None, якщо немає)."""
+    result = await session.execute(select(SystemSetting.value).where(SystemSetting.key == key))
+    return result.scalar()
+
+
+async def set_setting(session, key: str, value: str):
+    """Оновлює або створює налаштування в таблиці system_settings."""
+    result = await session.execute(select(SystemSetting).where(SystemSetting.key == key))
+    setting = result.scalar_one_or_none()
+
+    if setting:
+        setting.value = value
+    else:
+        session.add(SystemSetting(key=key, value=value))
+
+    await session.commit()
+
+
 async def get_current_publishing_day(session) -> int:
     """Отримує поточний день публікацій із таблиці налаштувань."""
-    result = await session.execute(
-        select(SystemSetting.value).where(SystemSetting.key == "current_publishing_day")
-    )
-    val = result.scalar()
+    val = await get_setting(session, "current_publishing_day")
     return int(val) if val and val.isdigit() else 1
 
 
 async def set_current_publishing_day(session, day_number: int):
     """Оновлює або створює номер поточного дня публікацій."""
-    result = await session.execute(
-        select(SystemSetting).where(SystemSetting.key == "current_publishing_day")
-    )
-    setting = result.scalar_one_or_none()
-
-    if setting:
-        setting.value = str(day_number)
-    else:
-        setting = SystemSetting(key="current_publishing_day", value=str(day_number))
-        session.add(setting)
-
-    await session.commit()
+    await set_setting(session, "current_publishing_day", str(day_number))
 
 
 async def get_lesson_by_day(session, day_number: int):
