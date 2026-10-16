@@ -1,0 +1,7 @@
+.env
+*.tar.gz
+*.md
+__pycache__/
+*.pyc
+audio/
+.git/

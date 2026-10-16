@@ -16,9 +16,11 @@ DATABASE_URL = f"mysql+aiomysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{D
 
 engine = create_async_engine(
     DATABASE_URL,
-    echo=True,  # Логування SQL-запитів у консоль (зручно для відлагодження)
+    echo=False,  # True лише для відлагодження: логує кожен SQL-запит
     pool_pre_ping=True,
-    pool_recycle=3600
+    pool_recycle=3600,
+    pool_size=2,  # бот робить 1-2 запити одночасно, дефолт 5+10 зайвий
+    max_overflow=3
 )
 
 AsyncSessionLocal = async_sessionmaker(

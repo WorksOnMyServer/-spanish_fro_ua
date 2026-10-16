@@ -1,31 +1,19 @@
-# Use an official Python runtime as a parent image
 FROM python:3.11-slim
 
-# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    MALLOC_ARENA_MAX=2 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Set work directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    libpq-dev \
-    netcat-openbsd \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Python dependencies
+# Системні пакети не потрібні: усі залежності ставляться з готових wheel-ів
 COPY requirements.txt /app/
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 
-# Create directory for generated audio files
 RUN mkdir -p /app/audio
 
-# Copy project files
 COPY . /app/
 
-# Run main application
 CMD ["python", "main.py"]
