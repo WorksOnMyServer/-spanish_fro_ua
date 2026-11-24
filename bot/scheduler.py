@@ -1,5 +1,6 @@
 import os
 import html
+import random
 import logging
 from aiogram import Bot
 from aiogram.types import FSInputFile
@@ -11,6 +12,8 @@ from database.crud import (
     get_current_publishing_day,
     set_current_publishing_day,
     save_generated_lesson,
+    get_quizzes_for_days,
+    save_quiz_poll,
 )
 from generator.gemini_pipeline import generate_daily_lesson
 from generator.topics import DEFAULT_TOPICS
@@ -20,6 +23,9 @@ logger = logging.getLogger(__name__)
 CHANNEL_ID = os.getenv("CHANNEL_ID")
 ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip()]
 scheduler = AsyncIOScheduler(timezone="Europe/Kyiv")
+
+# Субота: скільки питань з уроків тижня надсилати на перевірку
+WEEKEND_REVIEW_MAX_QUIZZES = 10
 
 
 # --- ☀️ 1. РАНОК (08:30): Словниковий запас ---
@@ -76,25 +82,82 @@ async def job_afternoon_quiz(bot: Bot):
             return
 
         for quiz in lesson.quizzes:
-            q_ua = getattr(quiz, 'question_ua', None)
+            await _send_quiz(bot, quiz)
 
-            # Опитування не підтримує спойлери, тому переклад питання надсилаємо окремим повідомленням
-            await bot.send_poll(
-                chat_id=CHANNEL_ID,
-                question=quiz.question_es[:300],
-                options=quiz.options_json,
-                type="quiz",
-                correct_option_id=quiz.correct_option_index,
-                explanation=quiz.explanation,
-                is_anonymous=True
+
+async def _send_quiz(bot: Bot, quiz):
+    """Надсилає одне опитування та український переклад питання зі спойлером."""
+    q_ua = getattr(quiz, 'question_ua', None)
+
+    # Опитування не підтримує спойлери, тому переклад питання надсилаємо окремим повідомленням
+    poll_msg = await bot.send_poll(
+        chat_id=CHANNEL_ID,
+        question=quiz.question_es[:300],
+        options=quiz.options_json,
+        type="quiz",
+        correct_option_id=quiz.correct_option_index,
+        explanation=quiz.explanation,
+        is_anonymous=True
+    )
+
+    await _record_quiz_poll(quiz, poll_msg)
+
+    if q_ua:
+        await bot.send_message(
+            chat_id=CHANNEL_ID,
+            text=f"🇺🇦 <tg-spoiler>{html.escape(q_ua)}</tg-spoiler>",
+            parse_mode="HTML"
+        )
+
+
+async def _record_quiz_poll(quiz, poll_msg):
+    """Зберігає зв'язок опитування з квізом для статистики. Збій не має зупиняти публікацію."""
+    try:
+        async with AsyncSessionLocal() as session:
+            await save_quiz_poll(
+                session,
+                quiz_id=quiz.id,
+                poll_id=poll_msg.poll.id,
+                correct_option_index=quiz.correct_option_index,
             )
+    except Exception as e:
+        logger.error(f"Не вдалося зберегти статистику для квізу {getattr(quiz, 'id', '?')}: {e}")
 
-            if q_ua:
-                await bot.send_message(
-                    chat_id=CHANNEL_ID,
-                    text=f"🇺🇦 <tg-spoiler>{html.escape(q_ua)}</tg-spoiler>",
-                    parse_mode="HTML"
-                )
+
+# --- 🧠 4. СУБОТА (12:30): Перевірка знань за тиждень ---
+
+async def job_weekend_review(bot: Bot):
+    """У суботу надсилає квізи з уроків, опублікованих за тиждень (Пн–Пт).
+
+    На суботу current_publishing_day вже вказує на понеділок наступного тижня,
+    тому уроки тижня мають номери [current-5, current-1].
+    """
+    async with AsyncSessionLocal() as session:
+        current_day = await get_current_publishing_day(session)
+        first_day = max(1, current_day - 5)
+        last_day = current_day - 1
+        logger.info(f"Субота: перевірка уроків №{first_day}–{last_day}...")
+
+        quizzes = await get_quizzes_for_days(session, first_day, last_day)
+
+    if not quizzes:
+        logger.warning(f"Квізи для перевірки за уроки №{first_day}–{last_day} відсутні.")
+        return
+
+    random.shuffle(quizzes)
+    quizzes = quizzes[:WEEKEND_REVIEW_MAX_QUIZZES]
+
+    await bot.send_message(
+        chat_id=CHANNEL_ID,
+        text=(
+            f"🧠 <b>Вихідна перевірка знань</b>\n"
+            f"Питання з уроків №{first_day}–{last_day}. Перевірте себе 👇"
+        ),
+        parse_mode="HTML"
+    )
+
+    for quiz in quizzes:
+        await _send_quiz(bot, quiz)
 
 
 # --- 🌙 3. ВЕЧІР (18:30): Граматика та Текст ---
@@ -166,9 +229,11 @@ async def _notify_admins_generation_failed(bot: Bot, day_number: int, error: Exc
 
 def start_scheduler(bot: Bot):
     """Запускає планувальник задач без дублювання."""
-    scheduler.add_job(job_morning_words, 'cron', hour=8, minute=30, args=[bot])
-    scheduler.add_job(job_afternoon_quiz, 'cron', hour=12, minute=30, args=[bot])
-    scheduler.add_job(job_evening_text, 'cron', hour=18, minute=30, args=[bot])
+    # Пн–Пт — звичайні публікації; у суботу — перевірка тижня; неділя — без постів
+    scheduler.add_job(job_morning_words, 'cron', day_of_week='mon-fri', hour=8, minute=30, args=[bot])
+    scheduler.add_job(job_afternoon_quiz, 'cron', day_of_week='mon-fri', hour=12, minute=30, args=[bot])
+    scheduler.add_job(job_evening_text, 'cron', day_of_week='mon-fri', hour=18, minute=30, args=[bot])
+    scheduler.add_job(job_weekend_review, 'cron', day_of_week='sat', hour=12, minute=30, args=[bot])
     
     scheduler.start()
     logger.info("APScheduler успішно запущено (Часовий пояс: Europe/Kyiv)!")

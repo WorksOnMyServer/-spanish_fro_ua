@@ -8,7 +8,8 @@ from database.models import (
     LexicalUnit,
     Quiz,
     SystemSetting,
-    Level
+    Level,
+    QuizPoll,
 )
 
 logger = logging.getLogger(__name__)
@@ -59,6 +60,18 @@ async def get_lesson_by_day(session, day_number: int):
     )
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
+
+
+async def get_quizzes_for_days(session, first_day: int, last_day: int):
+    """Повертає всі квізи уроків у діапазоні номерів днів (включно)."""
+    stmt = (
+        select(Quiz)
+        .join(DailyLesson, Quiz.lesson_id == DailyLesson.id)
+        .where(DailyLesson.day_number.between(first_day, last_day))
+        .order_by(DailyLesson.day_number, Quiz.id)
+    )
+    result = await session.execute(stmt)
+    return list(result.scalars().all())
 
 
 async def save_generated_lesson(session, lesson_data: dict):
@@ -141,3 +154,54 @@ async def save_generated_lesson(session, lesson_data: dict):
     await session.commit()
     logger.info(f"Урок №{day_num} успішно збережено в БД.")
     return lesson
+
+
+async def save_quiz_poll(session, quiz_id: int, poll_id: str, correct_option_index: int):
+    """Запам'ятовує зв'язок між опитуванням у каналі та квізом (для статистики)."""
+    session.add(QuizPoll(
+        quiz_id=quiz_id,
+        poll_id=poll_id,
+        correct_option_index=correct_option_index,
+    ))
+    await session.commit()
+
+
+async def update_quiz_poll_stats(session, poll_id: str, voter_counts: list[int]) -> bool:
+    """Оновлює лічильники відповідей. voter_counts — голоси за кожним варіантом."""
+    result = await session.execute(select(QuizPoll).where(QuizPoll.poll_id == poll_id))
+    record = result.scalar_one_or_none()
+    if record is None:
+        return False
+
+    idx = record.correct_option_index
+    record.total_votes = sum(voter_counts)
+    record.correct_votes = voter_counts[idx] if 0 <= idx < len(voter_counts) else 0
+    await session.commit()
+    return True
+
+
+async def get_quiz_quality_report(session) -> list[dict]:
+    """Повертає статистику по кожному надісланому квізу, у яких були відповіді."""
+    stmt = (
+        select(
+            QuizPoll.total_votes,
+            QuizPoll.correct_votes,
+            Quiz.question_es,
+            DailyLesson.day_number,
+        )
+        .join(Quiz, QuizPoll.quiz_id == Quiz.id)
+        .join(DailyLesson, Quiz.lesson_id == DailyLesson.id)
+        .where(QuizPoll.total_votes > 0)
+    )
+    result = await session.execute(stmt)
+    rows = []
+    for total, correct, question, day in result.all():
+        rows.append({
+            "day": day,
+            "question": question,
+            "total": total,
+            "correct": correct,
+            "accuracy": correct / total,
+        })
+    rows.sort(key=lambda r: r["accuracy"])
+    return rows

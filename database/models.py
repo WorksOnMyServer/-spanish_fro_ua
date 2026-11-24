@@ -88,3 +88,16 @@ class Quiz(Base):
     explanation = Column(Text, nullable=True)
 
     lesson = relationship("DailyLesson", back_populates="quizzes")
+
+
+class QuizPoll(Base):
+    """Опитування, надіслане в канал для квізу. Зберігає статистику відповідей."""
+    __tablename__ = "quiz_polls"
+
+    id = Column(Integer, primary_key=True, index=True)
+    quiz_id = Column(Integer, ForeignKey("quizzes.id", ondelete="CASCADE"), nullable=False, index=True)
+    poll_id = Column(String(64), unique=True, nullable=False)
+    correct_option_index = Column(Integer, nullable=False)
+    total_votes = Column(Integer, nullable=False, default=0)
+    correct_votes = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime, server_default=func.now())

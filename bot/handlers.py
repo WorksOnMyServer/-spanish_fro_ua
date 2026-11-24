@@ -1,4 +1,5 @@
 import os
+import html
 import logging
 from aiogram import Bot, Router, types, F
 from aiogram.filters import Command
@@ -10,7 +11,9 @@ from database.crud import (
     get_max_day_number, 
     save_generated_lesson,
     get_current_publishing_day,
-    set_current_publishing_day
+    set_current_publishing_day,
+    get_quiz_quality_report,
+    update_quiz_poll_stats,
 )
 from generator.gemini_pipeline import generate_daily_lesson
 from generator.topics import DEFAULT_TOPICS
@@ -434,3 +437,44 @@ async def callback_publish_afternoon(callback: types.CallbackQuery, bot: Bot):
 @router.callback_query(F.data == "publish_evening")
 async def callback_publish_evening(callback: types.CallbackQuery, bot: Bot):
     await _publish_part(callback, bot, job_evening_text, "🌙 Вечірній текст (день буде +1)")
+
+
+# --- 10. Статистика якості квізів ---
+
+@router.poll()
+async def on_poll_update(poll: types.Poll):
+    """Telegram надсилає оновлення стану опитувань, які створив бот: тут беремо кількість голосів."""
+    async with AsyncSessionLocal() as session:
+        await update_quiz_poll_stats(
+            session,
+            poll_id=poll.id,
+            voter_counts=[opt.voter_count for opt in poll.options],
+        )
+
+
+@router.message(Command("quality"))
+async def cmd_quality(message: types.Message):
+    if not is_admin(message.from_user.id):
+        return
+
+    async with AsyncSessionLocal() as session:
+        rows = await get_quiz_quality_report(session)
+
+    if not rows:
+        await message.answer("📉 Ще немає відповідей на квізи для аналізу.")
+        return
+
+    total_votes = sum(r["total"] for r in rows)
+    total_correct = sum(r["correct"] for r in rows)
+    text = (
+        f"📈 <b>Якість квізів</b>\n"
+        f"Опитувань з відповідями: {len(rows)}, голосів: {total_votes}, "
+        f"середня точність: {total_correct / total_votes:.0%}\n\n"
+        f"<b>Найскладніші (найнижча точність):</b>\n"
+    )
+    for r in rows[:10]:
+        text += (
+            f"• День {r['day']}: {r['accuracy']:.0%} "
+            f"({r['correct']}/{r['total']}) — <i>{html.escape(r['question'])}</i>\n"
+        )
+    await message.answer(text, parse_mode="HTML")
