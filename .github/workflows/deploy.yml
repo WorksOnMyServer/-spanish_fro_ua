@@ -1,0 +1,55 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Prepare SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Deploy on VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          # Лише fast-forward: якщо на сервері є свої незакомічені зміни або історія розійшлась, деплой зупиниться.
+          # Перебудова йде через `up -d --build`: якщо збірка впаде, старі контейнери залишаються працювати.
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes \
+              -o UserKnownHostsFile=~/.ssh/known_hosts -o StrictHostKeyChecking=yes \
+              "$VPS_USER@$VPS_HOST" 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          cd /opt/bots/spain_bot
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "❌ На сервері є незакомічені зміни, деплой зупинено"; git status --short; exit 1
+          fi
+          git fetch --quiet origin main
+          git merge --ff-only origin/main
+          echo "Деплой коміту $(git rev-parse --short HEAD)"
+          sudo /usr/bin/docker compose -f /opt/bots/spain_bot/docker-compose.yml up -d --build
+          sudo /usr/bin/docker compose -f /opt/bots/spain_bot/docker-compose.yml logs --tail=40 app
+          REMOTE
+
+      - name: Cleanup
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
