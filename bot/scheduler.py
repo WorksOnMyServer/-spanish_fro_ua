@@ -1,4 +1,5 @@
 import os
+import html
 import logging
 from aiogram import Bot
 from aiogram.types import FSInputFile
@@ -76,17 +77,24 @@ async def job_afternoon_quiz(bot: Bot):
 
         for quiz in lesson.quizzes:
             q_ua = getattr(quiz, 'question_ua', None)
-            poll_question = f"{quiz.question_es}\n({q_ua})" if q_ua else quiz.question_es
 
+            # Опитування не підтримує спойлери, тому переклад питання надсилаємо окремим повідомленням
             await bot.send_poll(
                 chat_id=CHANNEL_ID,
-                question=poll_question[:300],
+                question=quiz.question_es[:300],
                 options=quiz.options_json,
                 type="quiz",
                 correct_option_id=quiz.correct_option_index,
                 explanation=quiz.explanation,
                 is_anonymous=True
             )
+
+            if q_ua:
+                await bot.send_message(
+                    chat_id=CHANNEL_ID,
+                    text=f"🇺🇦 <tg-spoiler>{html.escape(q_ua)}</tg-spoiler>",
+                    parse_mode="HTML"
+                )
 
 
 # --- 🌙 3. ВЕЧІР (18:30): Граматика та Текст ---
@@ -103,11 +111,9 @@ async def job_evening_text(bot: Bot):
             return
 
         message = f"🌙 <b>Вечірнє закріплення (День {lesson.day_number})</b>\n\n"
-        message += f"📖 <b>Мікро-граматика: {lesson.grammar_rule_title}</b>\n"
-        message += f"{lesson.grammar_rule_text}\n\n"
         message += "📝 <b>Короткий текст дня:</b>\n"
-        message += f"🇪🇸 {lesson.evening_text_es}\n\n"
-        message += f"🇺🇦 <i>{lesson.evening_text_ua}</i>"
+        message += f"🇪🇸 {html.escape(lesson.evening_text_es)}\n\n"
+        message += f"🇺🇦 <tg-spoiler>{html.escape(lesson.evening_text_ua)}</tg-spoiler>"
 
         if lesson.evening_audio_path and os.path.exists(lesson.evening_audio_path):
             audio = FSInputFile(lesson.evening_audio_path)
